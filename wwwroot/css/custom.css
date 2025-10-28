@@ -1,0 +1,443 @@
+/* Paleta de colores: Rojos, Negros y Grises */
+/* Rojo principal: #dc3545 (Bootstrap Danger) */
+/* Negro/Gris oscuro principal: #1a1d20 */
+/* Gris para tarjetas: #212529 (Bootstrap Dark) */
+/* Gris para elementos UI: #343a40 */
+/* Cian para acentos: #0dcaf0 (Bootstrap Info) */
+
+body {
+    background-color: #1a1d20; /* Fondo principal más oscuro */
+    color: #f8f9fa; /* Texto claro para contraste */
+    font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.bg-dark-custom {
+    background-color: #1a1d20 !important; /* Un poco más claro que el body */
+    border-bottom: 1px solid #dc3545 !important; /* Borde rojo inferior */
+}
+
+.footer {
+    background-color: #1a1d20 !important;
+    font-size: 0.9em;
+    border-top: 1px solid #dc3545 !important;
+}
+
+.display-4, .lead {
+    color: #f8f9fa;
+}
+
+.lead.text-muted {
+    color: #adb5bd !important;
+}
+
+.card-custom {
+    border: none;
+    border-radius: 10px;
+    background-color: #212529; /* Gris oscuro para las tarjetas */
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.card-custom:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(220, 53, 69, 0.4); /* Sombra roja más pronunciada */
+}
+
+.card-custom .card-header {
+    background-color: #dc3545; /* Rojo para la cabecera */
+    color: white;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    border-bottom: none;
+    padding: 1rem 1.25rem;
+    font-weight: bold;
+}
+
+.card-custom .card-header h3 {
+    margin: 0;
+    font-size: 1.5rem;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+}
+
+.card-custom .list-group-item {
+    background-color: #212529; /* Mismo fondo que la tarjeta */
+    color: #f8f9fa;
+    border-left: none;
+    border-right: none;
+    border-color: #343a40; /* Separadores de items más sutiles */
+    padding: 0.85rem 1.25rem;
+}
+
+.card-custom .list-group-item a {
+    text-decoration: none;
+    color: #0dcaf0; /* Cian (Bootstrap Info) para los enlaces, para que resalten */
+    font-weight: 500;
+    transition: color 0.2s ease;
+}
+
+.card-custom .list-group-item a:hover {
+    color: #3dd5f3; /* Un cian más brillante al pasar el cursor */
+}
+
+.team-info-card {
+    background-color: #2b3035; /* Un gris intermedio */
+    padding: 1.5rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    margin-bottom: 2.5rem;
+    color: #dee2e6;
+}
+
+.team-info-card hr {
+    border-top: 1px solid #495057;
+}
+
+/* --- Estilos para páginas de ejercicios --- */
+.exercise-card {
+    background: linear-gradient(145deg, #2b3035, #1a1d20);
+    padding: 2rem;
+    border-radius: 10px;
+    border: 1px solid #343a40;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+}
+
+.control-panel {
+    padding-right: 1.5rem;
+    border-right: 1px solid #343a40;
+}
+
+.visualization-panel {
+    padding-left: 1.5rem;
+}
+.form-control {
+    background-color: #495057;
+    color: #f8f9fa;
+    border-color: #343a40;
+}
+
+.form-control:focus {
+    color: #f8f9fa;
+    background-color: #495057;
+    border-color: #dc3545;
+    box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.5);
+}
+
+.form-control::placeholder {
+    color: #adb5bd;
+}
+
+.alert-info {
+    background-color: #2b3035;
+    border-color: #495057;
+    color: #cff4fc; /* Un cian más claro para el texto de la alerta */
+}
+
+/* --- Estilos para la visualización de la Pila --- */
+.stack-visualization {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background-color: #2b3035;
+    border-radius: 8px;
+    border: 1px solid #495057;
+}
+
+.stack-container {
+    position: relative;
+    width: 120px;
+    min-height: 300px;
+    margin: 0 auto;
+    border: 3px solid #6c757d;
+    border-top: none; /* La pila está abierta por arriba */
+    border-bottom-left-radius: 5px;
+    border-bottom-right-radius: 5px;
+    display: flex;
+    flex-direction: column-reverse; /* Los elementos se apilan desde abajo */
+    align-items: center;
+    padding-bottom: 5px;
+}
+
+.stack-item {
+    width: 60px;
+    height: 60px;
+    background: radial-gradient(circle, #ff4d61, #dc3545);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+    font-weight: bold;
+    border: 2px solid #ff8a98; /* Borde rojo claro */
+    border-radius: 5px;
+    margin-top: 5px;
+    box-shadow: 0 0 15px rgba(220, 53, 69, 0.5), inset 0 0 5px rgba(255, 255, 255, 0.2);
+    opacity: 0; /* Inicia invisible para la animación */
+    text-shadow: 0 0 5px rgba(0,0,0,0.5);
+}
+
+/* Controles de la animación */
+.animation-controls {
+    background-color: #1a1d20;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.animation-controls .btn {
+    padding: 0.25rem 0.6rem;
+}
+
+.status-panel {
+    font-family: var(--bs-font-monospace);
+    background-color: #1a1d20;
+    color: #0dcaf0; /* Cian */
+    padding: 0.5rem 1rem;
+    border-radius: 5px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-grow: 1; /* Ocupa el espacio disponible */
+    border: 1px solid #0dcaf0;
+    box-shadow: 0 0 10px rgba(13, 202, 240, 0.3);
+}
+
+/* --- Estilos para la visualización de Palíndromo --- */
+.char-display {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 50px;
+    height: 50px;
+    text-align: center;
+    border-radius: 5px;
+    margin: 2px;
+    font-size: 2rem;
+    font-weight: bold;
+    transition: background-color 0.3s, color 0.3s, transform 0.3s, box-shadow 0.3s;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.4);
+}
+
+.char-processing {
+    transform: scale(1.2);
+    box-shadow: 0 0 15px #0dcaf0;
+}
+
+.comparison-active {
+    animation: pulse-animation 0.8s infinite;
+}
+
+/* Animaciones */
+@keyframes push-animation {
+    from {
+        opacity: 0;
+        transform: translateY(-100px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes pop-animation {
+    to {
+        opacity: 0;
+        transform: translateY(-100px) scale(0.5);
+    }
+}
+
+@keyframes pulse-animation {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.15);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+/* --- Estilos para la visualización de Suma de Números Grandes --- */
+.number-display-container {
+    /* Eliminado para un diseño más flexible */
+}
+
+.calculation-area {
+    background-color: #1a1d20;
+    border: 1px solid #495057;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-top: 1.5rem;
+    min-height: 150px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.3s ease;
+}
+
+.calculation-step {
+    font-family: var(--bs-font-monospace);
+    font-size: 2rem;
+    font-weight: bold;
+    color: #f8f9fa;
+    transition: all 0.3s ease-in-out;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.calculation-step .digit, .calculation-step .carry, .calculation-step .result {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 50px;
+    height: 50px;
+    text-align: center;
+    border-radius: 5px;
+    border-bottom: 3px solid rgba(0,0,0,0.4);
+    box-shadow: inset 0 2px 3px rgba(255,255,255,0.1), 0 2px 5px rgba(0,0,0,0.3);
+    transition: transform 0.2s ease;
+}
+
+.calculation-step .digit {
+    background: radial-gradient(circle, #ff4d61, #dc3545);
+    color: white;
+    opacity: 0; /* Inicia invisible para animación */
+}
+
+.calculation-step .carry {
+    background: radial-gradient(circle, #3dd5f3, #0dcaf0);
+    color: #000;
+}
+
+.calculation-step .result {
+    background: radial-gradient(circle, #28a745, #198754);
+    color: white;
+}
+
+.result-container-final {
+    font-size: 3rem;
+    font-weight: bold;
+    letter-spacing: 0.05em;
+}
+
+@keyframes digit-appear {
+    from {
+        opacity: 0;
+        transform: translateY(-20px) scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* --- Estilos para la visualización de Reemplazar Valor --- */
+.processing-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 150px;
+    font-family: var(--bs-font-monospace);
+}
+
+.processing-item {
+    width: 60px;
+    height: 60px;
+    font-size: 1.8rem;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 5px;
+    transition: all 0.3s ease-in-out;
+    opacity: 0;
+    transform: scale(0.5);
+}
+
+.stack-temp .stack-item {
+    background: radial-gradient(circle, #198754, #146c43); /* Verde */
+    border-color: #49b57a;
+}
+
+/* --- Estilos para la visualización de Colas (Estacionamiento) --- */
+.queue-visualization {
+    padding: 1.5rem;
+    background-color: #2b3035;
+    border-radius: 8px;
+    border: 1px solid #495057;
+}
+
+.queue-container {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start; /* Los autos se alinean a la izquierda */
+    align-items: center;
+    background: repeating-linear-gradient(45deg, #212529, #212529 10px, #2b3035 10px, #2b3035 20px);
+    padding: 1rem;
+    border-radius: 8px;
+    min-height: 120px;
+    overflow-x: auto;
+    gap: 0.5rem;
+}
+
+.car-item {
+    flex-shrink: 0;
+    width: 120px;
+    height: 70px;
+    background: linear-gradient(to top, #fd7e14, #ffc107); /* Naranja/Amarillo */
+    border: 2px solid #ffca2c;
+    border-radius: 10px 10px 5px 5px;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5), inset 0 2px 3px rgba(255,255,255,0.2);
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
+    position: relative;
+    opacity: 0;
+}
+
+.car-item .plate {
+    font-family: var(--bs-font-monospace);
+    font-size: 1.2rem;
+    background-color: rgba(0,0,0,0.3);
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+
+.car-item .owner {
+    font-size: 0.7rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+    width: 90%;
+    text-align: center;
+}
+
+.exit-ticket {
+    background-color: #1a1d20;
+    border: 1px solid #0dcaf0;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-top: 1rem;
+    font-family: var(--bs-font-monospace);
+    box-shadow: 0 0 15px rgba(13, 202, 240, 0.3);
+}
+
+.exit-ticket h5 {
+    color: #0dcaf0;
+}
+
+.exit-ticket .cost {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: #198754;
+}

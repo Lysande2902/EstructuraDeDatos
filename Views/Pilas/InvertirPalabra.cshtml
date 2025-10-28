@@ -1,0 +1,227 @@
+@{
+    ViewData["Title"] = "Invertir Palabra";
+}
+
+<div class="text-center">
+    <h1 class="display-6 fw-bold">Pilas: Invertir una Palabra</h1>
+    <p class="lead text-muted">Usa una pila para invertir el orden de los caracteres de una palabra.</p>
+</div>
+<hr class="mb-4">
+<div class="row">
+    <div class="col-lg-12">
+        <div class="exercise-card">
+            <div class="row">
+                <!-- Panel de Control (Izquierda) -->
+                <div class="col-lg-4 control-panel">
+                    <h4 class="text-white-50 mb-3">Panel de Control</h4>
+                    <form id="invertirForm" class="mb-4">
+                        <div class="mb-3">
+                            <label for="palabra" class="form-label">Palabra a invertir:</label>
+                            <input type="text" id="palabra" name="palabra" class="form-control form-control-lg" placeholder="Ej: Estructura" required />
+                        </div>
+                        <button type="submit" class="btn btn-danger w-100 btn-lg" id="invertirBtn"><i class="bi bi-diagram-2-fill me-2"></i>Iniciar Visualización</button>
+                    </form>
+
+                    <h5 class="text-white-50 mt-4 mb-3">Controles de Animación</h5>
+                    <div class="animation-controls">
+                        <button id="playPauseBtn" class="btn btn-info" disabled data-bs-toggle="tooltip" data-bs-placement="top" title="Play/Pausa"><i class="bi bi-play-fill"></i></button>
+                        <button id="resetBtn" class="btn btn-secondary" disabled data-bs-toggle="tooltip" data-bs-placement="top" title="Reiniciar"><i class="bi bi-arrow-clockwise"></i></button>
+                        <div class="d-flex align-items-center flex-grow-1">
+                            <label for="speedRange" class="form-label text-nowrap me-2 mb-0" data-bs-toggle="tooltip" data-bs-placement="top" title="Ajustar Velocidad"><i class="bi bi-speedometer2"></i></label>
+                            <input type="range" class="form-range" min="100" max="1000" value="700" step="100" id="speedRange">
+                        </div>
+                    </div>
+
+                    <h5 class="text-white-50 mt-4 mb-3">Estado</h5>
+                    <div class="status-panel" id="statusPanel">
+                        Esperando entrada...
+                    </div>
+
+                    <div id="resultadoContainer" class="alert alert-success mt-4 d-none" role="alert"></div>
+                </div>
+
+                <!-- Panel de Visualización (Derecha) -->
+                <div class="col-lg-8 visualization-panel">
+                    <h4 class="text-white-50 mb-3 text-center">Visualización de la Pila</h4>
+                    <div class="stack-visualization">
+                        <div class="row align-items-center">
+                            <div class="col text-center">
+                                <h6>Palabra Original</h6>
+                                <div id="originalWord" class="fs-2 fw-bold text-white-50 font-monospace"></div>
+                            </div>
+                            <div class="col-auto">
+                                <div class="stack-container" id="stackContainer">
+                                    <!-- Los elementos de la pila se agregarán aquí -->
+                                </div>
+                            </div>
+                            <div class="col text-center">
+                                <h6>Palabra Invertida</h6>
+                                <div id="invertedWord" class="fs-2 fw-bold text-success font-monospace bg-dark p-2 rounded"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    // Inicializar tooltips de Bootstrap
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    })
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const form = document.getElementById('invertirForm');
+        const palabraInput = document.getElementById('palabra');
+        const invertirBtn = document.getElementById('invertirBtn');
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const speedRange = document.getElementById('speedRange');
+        const statusPanel = document.getElementById('statusPanel');
+        const stackContainer = document.getElementById('stackContainer');
+        const originalWordDiv = document.getElementById('originalWord');
+        const invertedWordDiv = document.getElementById('invertedWord');
+        const resultadoContainer = document.getElementById('resultadoContainer');
+
+        let palabra = '';
+        let stack = [];
+        let palabraInvertida = '';
+        let pushIndex = 0;
+        let animationTimeout;
+        let isPaused = true;
+        let isFinished = false;
+        let currentPhase = 'idle'; // idle, push, pop
+
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            if (currentPhase !== 'idle' && !isFinished) return;
+            
+            palabra = palabraInput.value;
+            if (!palabra) {
+                mostrarResultado("Por favor, ingresa una palabra.");
+                return;
+            }
+            
+            setupAndPlay();
+        });
+
+        playPauseBtn.addEventListener('click', function () {
+            if (isFinished) return;
+            isPaused = !isPaused;
+            updatePlayPauseButton();
+            if (!isPaused) {
+                runAnimationStep();
+            }
+        });
+
+        resetBtn.addEventListener('click', function () {
+            resetState();
+            palabra = palabraInput.value;
+            if (palabra) {
+                setupAndPlay();
+            }
+        });
+
+        function setupAndPlay() {
+            resetState();
+            isPaused = false;
+            isFinished = false;
+            currentPhase = 'push';
+            invertirBtn.disabled = true;
+            playPauseBtn.disabled = false;
+            resetBtn.disabled = false;
+            originalWordDiv.textContent = palabra;
+            updatePlayPauseButton();
+            runAnimationStep();
+        }
+
+        function runAnimationStep() {
+            if (isPaused || isFinished) return;
+
+            let delay = 1100 - speedRange.value;
+
+            if (currentPhase === 'push') {
+                if (pushIndex < palabra.length) {
+                    const char = palabra[pushIndex];
+                    stack.push(char);
+                    statusPanel.textContent = `PUSH: Apilando '${char}'`;
+
+                    const stackItem = document.createElement('div');
+                    stackItem.className = 'stack-item';
+                    stackItem.textContent = char;
+                    stackContainer.appendChild(stackItem);
+                    stackItem.style.animation = 'push-animation 0.3s forwards';
+
+                    pushIndex++;
+                    animationTimeout = setTimeout(runAnimationStep, delay);
+                } else {
+                    currentPhase = 'pop';
+                    animationTimeout = setTimeout(runAnimationStep, delay * 2); // Pause between phases
+                }
+            } else if (currentPhase === 'pop') {
+                if (stack.length > 0) {
+                    const char = stack.pop();
+                    palabraInvertida += char;
+                    statusPanel.textContent = `POP: Desapilando '${char}'`;
+
+                    const stackItems = stackContainer.querySelectorAll('.stack-item');
+                    const topItem = stackItems[stackItems.length - 1];
+                    
+                    topItem.style.animation = 'pop-animation 0.3s forwards';
+                    
+                    setTimeout(() => {
+                        topItem.remove();
+                        invertedWordDiv.textContent = palabraInvertida;
+                        animationTimeout = setTimeout(runAnimationStep, delay);
+                    }, 300); // Wait for pop animation to finish
+                } else {
+                    finishAnimation();
+                }
+            }
+        }
+
+        function finishAnimation() {
+            isFinished = true;
+            isPaused = true;
+            statusPanel.textContent = '¡Completado!';
+            mostrarResultado(`<strong>¡Éxito!</strong> La palabra invertida es: <strong>${palabraInvertida}</strong>`);
+            invertirBtn.disabled = false;
+            updatePlayPauseButton();
+        }
+
+        function resetState() {
+            clearTimeout(animationTimeout);
+            stack = [];
+            palabraInvertida = '';
+            pushIndex = 0;
+            currentPhase = 'idle';
+            isFinished = true;
+            isPaused = true;
+
+            stackContainer.innerHTML = '';
+            originalWordDiv.textContent = '';
+            invertedWordDiv.textContent = '';
+            resultadoContainer.classList.add('d-none');
+            statusPanel.textContent = 'Esperando entrada...';
+            
+            invertirBtn.disabled = false;
+            playPauseBtn.disabled = true;
+            resetBtn.disabled = true;
+            updatePlayPauseButton();
+        }
+
+        function updatePlayPauseButton() {
+            playPauseBtn.innerHTML = isPaused ? '<i class="bi bi-play-fill"></i>' : '<i class="bi bi-pause-fill"></i>';
+        }
+
+        function mostrarResultado(mensaje) {
+            resultadoContainer.textContent = mensaje;
+            resultadoContainer.classList.remove('d-none');
+        }
+    });
+</script>
+}

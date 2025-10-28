@@ -1,0 +1,257 @@
+@{
+    ViewData["Title"] = "Reemplazar Valor";
+}
+<div class="text-center">
+    <h1 class="display-6 fw-bold">Pilas: Reemplazar Valor</h1>
+    <p class="lead text-muted">Usa una pila auxiliar para encontrar y reemplazar un valor en una pila existente.</p>
+</div>
+<hr class="mb-4">
+<div class="row">
+    <div class="col-lg-12">
+        <div class="exercise-card">
+            <div class="row">
+                <!-- Panel de Control (Izquierda) -->
+                <div class="col-lg-4 control-panel">
+                    <h4 class="text-white-50 mb-3">Panel de Control</h4>
+                    <form id="reemplazarForm" class="mb-4">
+                        <div class="mb-3">
+                            <label for="pilaStr" class="form-label">Elementos de la Pila (separados por comas):</label>
+                            <input type="text" id="pilaStr" name="pilaStr" class="form-control form-control-lg" placeholder="Ej: 1,5,3,5,2" required pattern="^([0-9]+,)*[0-9]+$" title="Lista de números separados por comas."/>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="viejo" class="form-label">Valor a reemplazar:</label>
+                                <input type="number" id="viejo" name="viejo" class="form-control form-control-lg" placeholder="Ej: 5" required />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="nuevo" class="form-label">Nuevo valor:</label>
+                                <input type="number" id="nuevo" name="nuevo" class="form-control form-control-lg" placeholder="Ej: 9" required />
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-danger w-100 btn-lg" id="reemplazarBtn"><i class="bi bi-shuffle me-2"></i>Iniciar Reemplazo</button>
+                    </form>
+
+                    <h5 class="text-white-50 mt-4 mb-3">Controles de Animación</h5>
+                    <div class="animation-controls">
+                        <button id="playPauseBtn" class="btn btn-info" disabled data-bs-toggle="tooltip" data-bs-placement="top" title="Play/Pausa"><i class="bi bi-play-fill"></i></button>
+                        <button id="resetBtn" class="btn btn-secondary" disabled data-bs-toggle="tooltip" data-bs-placement="top" title="Reiniciar"><i class="bi bi-arrow-clockwise"></i></button>
+                        <div class="d-flex align-items-center flex-grow-1">
+                            <label for="speedRange" class="form-label text-nowrap me-2 mb-0" data-bs-toggle="tooltip" data-bs-placement="top" title="Ajustar Velocidad"><i class="bi bi-speedometer2"></i></label>
+                            <input type="range" class="form-range" min="100" max="1500" value="800" step="100" id="speedRange">
+                        </div>
+                    </div>
+
+                    <h5 class="text-white-50 mt-4 mb-3">Estado</h5>
+                    <div class="status-panel" id="statusPanel">
+                        Esperando entrada...
+                    </div>
+
+                    <div id="resultadoContainer" class="alert mt-4 d-none" role="alert"></div>
+                </div>
+
+                <!-- Panel de Visualización (Derecha) -->
+                <div class="col-lg-8 visualization-panel">
+                    <h4 class="text-white-50 mb-3 text-center">Visualización del Proceso</h4>
+                    <div class="stack-visualization text-center">
+                        <div class="row justify-content-center align-items-start">
+                            <!-- Pila Original -->
+                            <div class="col">
+                                <h6>Pila Original</h6>
+                                <div class="stack-container" id="stackOriginalContainer" style="min-height: 300px;"></div>
+                            </div>
+                            <!-- Área de Procesamiento -->
+                            <div class="col-auto d-flex flex-column align-items-center justify-content-center" style="min-height: 350px;">
+                                <i class="bi bi-arrow-right-circle-fill fs-1 text-info mb-3"></i>
+                                <div class="processing-area bg-dark rounded p-3">
+                                    <h6 class="text-muted">Procesando</h6>
+                                    <div id="processingItem" class="processing-item"></div>
+                                </div>
+                                <i class="bi bi-arrow-left-circle-fill fs-1 text-success mt-3"></i>
+                            </div>
+                            <!-- Pila Temporal -->
+                            <div class="col">
+                                <h6>Pila Temporal</h6>
+                                <div class="stack-container stack-temp" id="stackTempContainer" style="min-height: 300px;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // --- Inicialización de elementos y variables ---
+        const form = document.getElementById('reemplazarForm');
+        const pilaStrInput = document.getElementById('pilaStr');
+        const viejoInput = document.getElementById('viejo');
+        const nuevoInput = document.getElementById('nuevo');
+        const reemplazarBtn = document.getElementById('reemplazarBtn');
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const speedRange = document.getElementById('speedRange');
+        const statusPanel = document.getElementById('statusPanel');
+        const stackOriginalContainer = document.getElementById('stackOriginalContainer');
+        const stackTempContainer = document.getElementById('stackTempContainer');
+        const processingItemDiv = document.getElementById('processingItem');
+        const resultadoContainer = document.getElementById('resultadoContainer');
+
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function (tooltipTriggerEl) { return new bootstrap.Tooltip(tooltipTriggerEl); });
+
+        let pilaOriginal = [], pilaTemporal = [];
+        let valorViejo, valorNuevo;
+        let animationTimeout;
+        let isPaused = true, isFinished = false, currentPhase = 'idle'; // idle, replace, restore
+
+        // --- Lógica Principal ---
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            if (currentPhase !== 'idle' && !isFinished) return;
+            
+            const pilaStr = pilaStrInput.value;
+            valorViejo = parseInt(viejoInput.value, 10);
+            valorNuevo = parseInt(nuevoInput.value, 10);
+
+            if (!pilaStr || isNaN(valorViejo) || isNaN(valorNuevo)) {
+                mostrarResultado("Por favor, completa todos los campos.", 'alert-warning');
+                return;
+            }
+            
+            const numeros = pilaStr.split(',').map(s => parseInt(s.trim(), 10));
+            if (numeros.some(isNaN)) {
+                mostrarResultado("La pila contiene valores no numéricos.", 'alert-warning');
+                return;
+            }
+
+            setupAndPlay(numeros.reverse());
+        });
+
+        function setupAndPlay(numeros) {
+            resetState();
+            isPaused = false;
+            isFinished = false;
+            currentPhase = 'replace';
+            
+            reemplazarBtn.disabled = true;
+            playPauseBtn.disabled = false;
+            resetBtn.disabled = false;
+
+            pilaOriginal = [...numeros];
+            pilaOriginal.forEach(item => addStackItem(stackOriginalContainer, item, true));
+            
+            statusPanel.textContent = 'Iniciando proceso de reemplazo...';
+            updatePlayPauseButton();
+            animationTimeout = setTimeout(runAnimationStep, 1600 - speedRange.value);
+        }
+
+        function runAnimationStep() {
+            if (isPaused || isFinished) return;
+            let delay = 1600 - speedRange.value;
+
+            if (currentPhase === 'replace') {
+                if (pilaOriginal.length > 0) {
+                    const item = pilaOriginal.pop();
+                    popStackItem(stackOriginalContainer);
+                    
+                    setTimeout(() => {
+                        showProcessingItem(item, item === valorViejo);
+                        const newItem = item === valorViejo ? valorNuevo : item;
+                        statusPanel.textContent = `Procesando ${item}. ${item === valorViejo ? `Reemplazando con ${valorNuevo}`: 'No se reemplaza'}.`;
+                        pilaTemporal.push(newItem);
+
+                        setTimeout(() => {
+                            hideProcessingItem();
+                            addStackItem(stackTempContainer, newItem);
+                            animationTimeout = setTimeout(runAnimationStep, delay);
+                        }, delay / 2);
+                    }, 400);
+                } else {
+                    currentPhase = 'restore';
+                    statusPanel.textContent = 'Fase de reemplazo completa. Restaurando pila original...';
+                    animationTimeout = setTimeout(runAnimationStep, delay * 1.5);
+                }
+            } else if (currentPhase === 'restore') {
+                if (pilaTemporal.length > 0) {
+                    const item = pilaTemporal.pop();
+                    popStackItem(stackTempContainer);
+                    statusPanel.textContent = `Restaurando ${item} a la pila original.`;
+                    pilaOriginal.push(item);
+                    setTimeout(() => {
+                        addStackItem(stackOriginalContainer, item);
+                        animationTimeout = setTimeout(runAnimationStep, delay);
+                    }, 400);
+                } else {
+                    finishAnimation();
+                }
+            }
+        }
+
+        function finishAnimation() {
+            isFinished = true;
+            isPaused = true;
+            statusPanel.textContent = '¡Proceso Completado!';
+            const resultadoStr = pilaOriginal.slice().reverse().join(', ');
+            mostrarResultado(`<strong>¡Éxito!</strong> Pila final: <strong>[${resultadoStr}]</strong>`, 'alert-success');
+            reemplazarBtn.disabled = false;
+            updatePlayPauseButton();
+        }
+
+        // --- Funciones de Utilidad y Estado ---
+        function showProcessingItem(value, isMatch) {
+            processingItemDiv.textContent = value;
+            processingItemDiv.className = `processing-item ${isMatch ? 'bg-success' : 'bg-secondary'}`;
+            processingItemDiv.style.opacity = 1;
+            processingItemDiv.style.transform = 'scale(1)';
+        }
+
+        function hideProcessingItem() {
+            processingItemDiv.style.opacity = 0;
+            processingItemDiv.style.transform = 'scale(0.5)';
+        }
+
+        function addStackItem(container, value, instant = false) {
+            const item = document.createElement('div');
+            item.className = 'stack-item';
+            item.textContent = value;
+            if (!instant) item.style.animation = 'push-animation 0.3s forwards';
+            else { item.style.opacity = 1; item.style.animation = 'none'; }
+            container.appendChild(item);
+        }
+
+        function popStackItem(container) {
+            const items = container.querySelectorAll('.stack-item');
+            if (items.length > 0) {
+                const topItem = items[items.length - 1];
+                topItem.style.animation = 'pop-animation 0.4s forwards';
+                setTimeout(() => topItem.remove(), 400);
+            }
+        }
+        
+        function resetState() {
+            clearTimeout(animationTimeout);
+            pilaOriginal = []; pilaTemporal = [];
+            currentPhase = 'idle'; isFinished = true; isPaused = true;
+
+            stackOriginalContainer.innerHTML = '';
+            stackTempContainer.innerHTML = '';
+            hideProcessingItem();
+            resultadoContainer.classList.add('d-none');
+            statusPanel.textContent = 'Esperando entrada...';
+            
+            reemplazarBtn.disabled = false;
+            playPauseBtn.disabled = true;
+            resetBtn.disabled = true;
+            updatePlayPauseButton();
+        }
+
+        playPauseBtn.addEventListener('click', () => { if (!isFinished) { isPaused = !isPaused; updatePlayPauseButton(); if (!isPaused) runAnimationStep(); } });
+        resetBtn.addEventListener('click', () => { resetState(); if (pilaStrInput.value) form.dispatchEvent(new Event('submit')); });
+        function updatePlayPauseButton() { playPauseBtn.innerHTML = isPaused ? '<i class="bi bi-play-fill"></i>' : '<i class="bi bi-pause-fill"></i>'; }
+        function mostrarResultado(mensaje, alertClass) { resultadoContainer.innerHTML = mensaje; resultadoContainer.className = `alert ${alertClass} mt-4`; }
+    });
+</script>
+}

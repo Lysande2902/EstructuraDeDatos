@@ -1,0 +1,281 @@
+@{
+    ViewData["Title"] = "Palíndromo";
+}
+<div class="text-center">
+    <h1 class="display-6 fw-bold">Pilas: Verificar si es Palíndromo</h1>
+    <p class="lead text-muted">Usa una pila para comprobar si una palabra se lee igual al derecho y al revés.</p>
+</div>
+<hr class="mb-4">
+<div class="row">
+    <div class="col-lg-12">
+        <div class="exercise-card">
+            <div class="row">
+                <!-- Panel de Control (Izquierda) -->
+                <div class="col-lg-4 control-panel">
+                    <h4 class="text-white-50 mb-3">Panel de Control</h4>
+                    <form id="palindromoForm" class="mb-4">
+                        <div class="mb-3">
+                            <label for="palabra" class="form-label">Palabra a verificar:</label>
+                            <input type="text" id="palabra" name="palabra" class="form-control form-control-lg" placeholder="Ej: anilina" required />
+                        </div>
+                        <button type="submit" class="btn btn-danger w-100 btn-lg" id="verificarBtn"><i class="bi bi-arrow-repeat me-2"></i>Iniciar Verificación</button>
+                    </form>
+
+                    <h5 class="text-white-50 mt-4 mb-3">Controles de Animación</h5>
+                    <div class="animation-controls">
+                        <button id="playPauseBtn" class="btn btn-info" disabled data-bs-toggle="tooltip" data-bs-placement="top" title="Play/Pausa"><i class="bi bi-play-fill"></i></button>
+                        <button id="resetBtn" class="btn btn-secondary" disabled data-bs-toggle="tooltip" data-bs-placement="top" title="Reiniciar"><i class="bi bi-arrow-clockwise"></i></button>
+                        <div class="d-flex align-items-center flex-grow-1">
+                            <label for="speedRange" class="form-label text-nowrap me-2 mb-0" data-bs-toggle="tooltip" data-bs-placement="top" title="Ajustar Velocidad"><i class="bi bi-speedometer2"></i></label>
+                            <input type="range" class="form-range" min="100" max="1000" value="600" step="100" id="speedRange">
+                        </div>
+                    </div>
+
+                    <h5 class="text-white-50 mt-4 mb-3">Estado</h5>
+                    <div class="status-panel" id="statusPanel">
+                        Esperando entrada...
+                    </div>
+
+                    <div id="resultadoContainer" class="alert mt-4 d-none" role="alert"></div>
+                </div>
+
+                <!-- Panel de Visualización (Derecha) -->
+                <div class="col-lg-8 visualization-panel">
+                    <h4 class="text-white-50 mb-3 text-center">Visualización del Proceso</h4>
+                    <div class="stack-visualization text-center">
+                        <h6 class="text-muted">Palabra a Procesar</h6>
+                        <div id="wordDisplay" class="mb-4 font-monospace p-2 bg-dark rounded">
+                            <!-- Los caracteres de la palabra se mostrarán aquí -->
+                        </div>
+                        <div class="row align-items-center justify-content-center mt-4">
+                            <div class="col text-center">
+                                <h6>Pila</h6>
+                                <div class="stack-container" id="stackContainer" style="min-height: 200px;">
+                                    <!-- Los elementos de la pila se agregarán aquí -->
+                                </div>
+                            </div>
+                            <div class="col-auto mx-4 text-center">
+                                <i class="bi bi-arrow-left-right fs-1 text-white-50"></i>
+                            </div>
+                            <div class="col text-center ">
+                                <h6>Comparación</h6>
+                                <div id="comparisonDisplay" class="fs-1 fw-bold">
+                                    <span id="char1" class="char-display bg-dark text-white-50">?</span>
+                                    <span class="text-white-50">=</span>
+                                    <span id="char2" class="char-display bg-dark text-white-50">?</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const form = document.getElementById('palindromoForm');
+        const palabraInput = document.getElementById('palabra');
+        const verificarBtn = document.getElementById('verificarBtn');
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const speedRange = document.getElementById('speedRange');
+        const statusPanel = document.getElementById('statusPanel');
+        const stackContainer = document.getElementById('stackContainer');
+        const wordDisplay = document.getElementById('wordDisplay');
+        const comparisonDisplay = {
+            char1: document.getElementById('char1'),
+            char2: document.getElementById('char2')
+        };
+        const resultadoContainer = document.getElementById('resultadoContainer');
+
+        // Inicializar tooltips de Bootstrap
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+
+        let palabraOriginal = '';
+        let palabraLimpia = '';
+        let stack = [];
+        let currentIndex = 0;
+        let animationTimeout;
+        let isPaused = true;
+        let isFinished = false;
+        let currentPhase = 'idle'; // idle, push, compare
+
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            if (currentPhase !== 'idle' && !isFinished) return;
+            
+            palabraOriginal = palabraInput.value;
+            if (!palabraOriginal) {
+                mostrarResultado("Por favor, ingresa una palabra.", 'alert-warning');
+                return;
+            }
+            
+            palabraLimpia = palabraOriginal.toLowerCase().replace(/[^a-z0-9]/gi, '');
+            if (!palabraLimpia) {
+                mostrarResultado("La entrada no contiene caracteres válidos para verificar.", 'alert-warning');
+                return;
+            }
+
+            setupAndPlay();
+        });
+
+        playPauseBtn.addEventListener('click', () => {
+            if (isFinished) return;
+            isPaused = !isPaused;
+            updatePlayPauseButton();
+            if (!isPaused) runAnimationStep();
+        });
+
+        resetBtn.addEventListener('click', () => {
+            resetState();
+            palabraOriginal = palabraInput.value;
+            if (palabraOriginal) {
+                palabraLimpia = palabraOriginal.toLowerCase().replace(/[^a-z0-9]/gi, '');
+                if(palabraLimpia) setupAndPlay();
+            }
+        });
+
+        function setupAndPlay() {
+            resetState();
+            isPaused = false;
+            isFinished = false;
+            currentPhase = 'push';
+            verificarBtn.disabled = true;
+            playPauseBtn.disabled = false;
+            resetBtn.disabled = false;
+            
+            wordDisplay.innerHTML = palabraLimpia.split('').map((char, index) => `<span id="word-char-${index}" class="char-display bg-dark text-white-50">${char}</span>`).join('');
+            
+            updatePlayPauseButton();
+            runAnimationStep();
+        }
+
+        function runAnimationStep() {
+            if (isPaused || isFinished) return;
+
+            let delay = 1100 - speedRange.value;
+            const len = palabraLimpia.length;
+            const mid = Math.floor(len / 2);
+
+            if (currentPhase === 'push') {
+                if (currentIndex < mid) {
+                    const char = palabraLimpia[currentIndex];
+                    stack.push(char);
+                    statusPanel.textContent = `PUSH: Apilando '${char}' de la primera mitad.`;
+                    
+                    document.getElementById(`word-char-${currentIndex}`).classList.add('bg-info', 'text-dark', 'char-processing');
+
+                    const stackItem = document.createElement('div');
+                    stackItem.className = 'stack-item';
+                    stackItem.textContent = char;
+                    stackContainer.appendChild(stackItem);
+                    stackItem.style.animation = 'push-animation 0.3s forwards';
+
+                    currentIndex++;
+                    animationTimeout = setTimeout(runAnimationStep, delay);
+                } else {
+                    currentPhase = 'compare';
+                    currentIndex = mid + (len % 2); // Skip middle character on odd length
+                    if (len % 2 !== 0) {
+                         document.getElementById(`word-char-${mid}`).classList.add('bg-secondary');
+                         statusPanel.textContent = `OMITIR: Omitiendo caracter central '${palabraLimpia[mid]}'.`;
+                    }
+                    animationTimeout = setTimeout(runAnimationStep, delay * 1.5);
+                }
+            } else if (currentPhase === 'compare') {
+                if (currentIndex < len) {
+                    const charFromWord = palabraLimpia[currentIndex];
+                    const charFromStack = stack.pop();
+                    statusPanel.textContent = `POP & COMPARE: Desapilando '${charFromStack}', comparando con '${charFromWord}'.`;
+
+                    const stackItems = stackContainer.querySelectorAll('.stack-item');
+                    const topItem = stackItems[stackItems.length - 1];
+                    topItem.style.animation = 'pop-animation 0.3s forwards';
+
+                    const wordCharSpan = document.getElementById(`word-char-${currentIndex}`);
+                    wordCharSpan.classList.add('char-processing');
+                    
+                    comparisonDisplay.char1.textContent = charFromWord;
+                    comparisonDisplay.char1.classList.add('comparison-active');
+                    comparisonDisplay.char2.textContent = charFromStack;
+                    comparisonDisplay.char2.classList.add('comparison-active');
+
+                    if (charFromWord === charFromStack) {
+                        setTimeout(() => {
+                            comparisonDisplay.char1.className = 'char-display bg-success text-white';
+                            comparisonDisplay.char2.className = 'char-display bg-success text-white';
+                            wordCharSpan.classList.replace('char-processing', 'bg-success');
+                        }, delay / 2);
+                        setTimeout(() => {
+                            topItem.remove();
+                            currentIndex++;
+                            animationTimeout = setTimeout(runAnimationStep, delay);
+                        }, delay);
+                    } else {
+                        comparisonDisplay.char1.className = 'char-display bg-danger text-white';
+                        comparisonDisplay.char1.classList.remove('comparison-active');
+                        comparisonDisplay.char2.className = 'char-display bg-danger text-white';
+                        comparisonDisplay.char2.classList.remove('comparison-active');
+                        wordCharSpan.classList.replace('char-processing', 'bg-danger');
+                        finishAnimation(false);
+                    }
+                } else {
+                    finishAnimation(true);
+                }
+            }
+        }
+
+        function finishAnimation(esPalindromo) {
+            isFinished = true;
+            isPaused = true;
+            if (esPalindromo) {
+                statusPanel.textContent = '¡Completado! Es un palíndromo.';
+                mostrarResultado(`<strong>¡Éxito!</strong> La palabra "${palabraOriginal}" es un palíndromo.`, 'alert-success');
+            } else {
+                statusPanel.textContent = '¡Completado! No es un palíndromo.';
+                mostrarResultado(`<strong>Fallo.</strong> La palabra "${palabraOriginal}" NO es un palíndromo.`, 'alert-danger');
+            }
+            verificarBtn.disabled = false;
+            updatePlayPauseButton();
+        }
+
+        function resetState() {
+            clearTimeout(animationTimeout);
+            stack = [];
+            currentIndex = 0;
+            currentPhase = 'idle';
+            isFinished = true;
+            isPaused = true;
+
+            stackContainer.innerHTML = '';
+            wordDisplay.innerHTML = '';
+            resultadoContainer.classList.add('d-none');
+            statusPanel.textContent = 'Esperando entrada...';
+            comparisonDisplay.char1.textContent = '?';
+            comparisonDisplay.char2.textContent = '?';
+            comparisonDisplay.char1.className = 'char-display bg-dark text-white-50';
+            comparisonDisplay.char2.className = 'char-display bg-dark text-white-50';
+            
+            verificarBtn.disabled = false;
+            playPauseBtn.disabled = true;
+            resetBtn.disabled = true;
+            updatePlayPauseButton();
+        }
+
+        function updatePlayPauseButton() {
+            playPauseBtn.innerHTML = isPaused ? '<i class="bi bi-play-fill"></i>' : '<i class="bi bi-pause-fill"></i>';
+        }
+
+        function mostrarResultado(mensaje, alertClass) {
+            resultadoContainer.innerHTML = mensaje;
+            resultadoContainer.className = `alert ${alertClass} mt-4`; // Reemplaza todas las clases
+        }
+    });
+</script>
+}

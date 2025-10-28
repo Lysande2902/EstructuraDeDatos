@@ -1,0 +1,177 @@
+@{
+    ViewData["Title"] = "Estacionamiento";
+}
+<div class="text-center">
+    <h1 class="display-6 fw-bold">Colas: Estacionamiento de Autos</h1>
+    <p class="lead text-muted">Simula la entrada y salida de autos en un estacionamiento tipo callejón (FIFO).</p>
+</div>
+<hr class="mb-4">
+<div class="row">
+    <div class="col-lg-12">
+        <div class="exercise-card">
+            <div class="row">
+                <!-- Panel de Control (Izquierda) -->
+                <div class="col-lg-4 control-panel">
+                    <h4 class="text-white-50 mb-3">Panel de Control</h4>
+                    <form id="entradaForm" class="mb-4">
+                        <div class="mb-3">
+                            <label for="placas" class="form-label">Placas del Auto:</label>
+                            <input type="text" id="placas" class="form-control form-control-lg" placeholder="Ej: ABC-123" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="propietario" class="form-label">Nombre del Propietario:</label>
+                            <input type="text" id="propietario" class="form-control form-control-lg" placeholder="Ej: Juan Pérez" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 btn-lg"><i class="bi bi-box-arrow-in-right me-2"></i>Registrar Entrada</button>
+                    </form>
+
+                    <hr>
+
+                    <button id="salidaBtn" class="btn btn-success w-100 btn-lg"><i class="bi bi-box-arrow-left me-2"></i>Registrar Salida</button>
+
+                    <div id="ticketContainer" class="mt-4">
+                        <!-- El ticket de salida se mostrará aquí -->
+                    </div>
+                </div>
+
+                <!-- Panel de Visualización (Derecha) -->
+                <div class="col-lg-8 visualization-panel">
+                    <h4 class="text-white-50 mb-3 text-center">Estacionamiento</h4>
+                    <div class="queue-visualization">
+                        <div class="d-flex justify-content-start align-items-center text-muted">
+                            <span><i class="bi bi-arrow-left-right"></i> ENTRADA / SALIDA</span>
+                        </div>
+                        <div class="queue-container" id="queueContainer">
+                            <!-- Los autos se mostrarán aquí -->
+                        </div>
+                        <div id="statusPanel" class="alert alert-info mt-3 text-center">
+                            El estacionamiento está vacío.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const entradaForm = document.getElementById('entradaForm');
+        const placasInput = document.getElementById('placas');
+        const propietarioInput = document.getElementById('propietario');
+        const salidaBtn = document.getElementById('salidaBtn');
+        const queueContainer = document.getElementById('queueContainer');
+        const statusPanel = document.getElementById('statusPanel');
+        const ticketContainer = document.getElementById('ticketContainer');
+
+        let parkingQueue = [];
+
+        // --- Lógica de Entrada de Auto ---
+        entradaForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const car = {
+                placas: placasInput.value.toUpperCase(),
+                propietario: propietarioInput.value,
+                entryTime: new Date()
+            };
+
+            parkingQueue.push(car);
+            addCarToView(car);
+            updateStatus();
+
+            placasInput.value = '';
+            propietarioInput.value = '';
+            placasInput.focus();
+        });
+
+        // --- Lógica de Salida de Auto ---
+        salidaBtn.addEventListener('click', function() {
+            if (parkingQueue.length === 0) {
+                showTicket(null, "El estacionamiento está vacío.");
+                return;
+            }
+
+            const car = parkingQueue.pop(); // LIFO - El último en entrar es el primero en salir
+            removeCarFromView(true); // true para indicar que es el último elemento
+            updateStatus();
+
+            const exitTime = new Date();
+            const durationSeconds = (exitTime - car.entryTime) / 1000;
+            const cost = durationSeconds * 2.00;
+
+            showTicket(car, null, exitTime, durationSeconds, cost);
+        });
+
+        // --- Funciones de la Vista ---
+        function addCarToView(car) {
+            const carDiv = document.createElement('div');
+            carDiv.className = 'car-item';
+            carDiv.innerHTML = `
+                <div class="plate">${car.placas}</div>
+                <div class="owner">${car.propietario}</div>
+            `;
+            queueContainer.appendChild(carDiv);
+            
+            // Animación de entrada
+            setTimeout(() => {
+                carDiv.style.animation = 'push-animation 0.5s forwards';
+            }, 10);
+        }
+
+        function removeCarFromView(isLast) {
+            const carDiv = isLast ? queueContainer.lastChild : queueContainer.firstChild;
+            if (carDiv) {
+                carDiv.style.animation = 'pop-animation 0.5s forwards';
+                setTimeout(() => {
+                    carDiv.remove(); 
+                }, 500);
+            }
+        }
+
+        function updateStatus() {
+            if (parkingQueue.length === 0) {
+                statusPanel.textContent = 'El estacionamiento está vacío.';
+                statusPanel.classList.remove('alert-success');
+                statusPanel.classList.add('alert-info');
+            } else {
+                statusPanel.textContent = `Hay ${parkingQueue.length} auto(s) en el estacionamiento.`;
+                statusPanel.classList.remove('alert-info');
+                statusPanel.classList.add('alert-success');
+            }
+        }
+
+        function showTicket(car, error, exitTime, duration, cost) {
+            ticketContainer.innerHTML = ''; // Limpiar ticket anterior
+
+            const ticketDiv = document.createElement('div');
+            ticketDiv.className = 'exit-ticket';
+
+            if (error) {
+                ticketDiv.innerHTML = `<h5 class="text-warning"><i class="bi bi-exclamation-triangle-fill me-2"></i>Aviso</h5><p>${error}</p>`;
+            } else {
+                const formatTime = (date) => date.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                const formatCurrency = (amount) => amount.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' });
+
+                ticketDiv.innerHTML = `
+                    <h5 class="text-center"><i class="bi bi-receipt"></i> Ticket de Salida</h5>
+                    <hr>
+                    <p><strong>Placas:</strong> ${car.placas}</p>
+                    <p><strong>Propietario:</strong> ${car.propietario}</p>
+                    <p><strong>Entrada:</strong> ${formatTime(car.entryTime)}</p>
+                    <p><strong>Salida:</strong> ${formatTime(exitTime)}</p>
+                    <p><strong>Tiempo:</strong> ${duration.toFixed(2)} segundos</p>
+                    <hr>
+                    <div class="text-center">
+                        <p class="mb-1">TOTAL A PAGAR:</p>
+                        <p class="cost">${formatCurrency(cost)}</p>
+                    </div>
+                `;
+            }
+
+            ticketContainer.appendChild(ticketDiv);
+        }
+    });
+</script>
+}

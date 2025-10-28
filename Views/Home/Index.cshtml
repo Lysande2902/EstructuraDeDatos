@@ -1,0 +1,72 @@
+@{
+    ViewData["Title"] = "Menú Principal";
+}
+
+<div class="text-center mb-4">
+    <h1 class="display-4 fw-bold text-white">Práctica - Estructuras de Datos</h1>
+    <p class="lead text-white-50">Selecciona un ejercicio del menú para comenzar.</p>
+</div>
+
+<div class="team-info-card">
+    <h4 class="text-center mb-3">Integrantes del Equipo</h4>
+    <hr>
+    <ul class="list-unstyled row text-center">
+        <li class="col-md-6 col-lg-3 team-member">Flor Maribel Ku May</li>
+        <li class="col-md-6 col-lg-3 team-member">Jose Octavio Hernandez Tec</li>
+        <li class="col-md-6 col-lg-3 team-member">Juan Manuel Duarte Tah</li>
+        <li class="col-md-6 col-lg-3 team-member">Yeng Lee Salas Jimenez</li>
+    </ul>
+    <div class="text-center mt-2">
+        <strong>Grupo:</strong> 4E - DSM (Desarrollo de Software Multiplataforma)
+    </div>
+</div>
+
+<div class="row">
+    <!-- Listas -->
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 card-custom">
+            <div class="card-header d-flex justify-content-center align-items-center">
+                <i class="bi bi-list-ul me-2"></i>
+                <h3 class="m-0">Listas</h3>
+            </div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item"><a asp-controller="Listas" asp-action="ProductosDisponiblesRetirados">Ejercicio 1: Productos</a></li>
+                <li class="list-group-item"><a asp-controller="Listas" asp-action="ParesImpares">Ejercicio 2: Pares e Impares</a></li>
+                <li class="list-group-item"><a asp-controller="Listas" asp-action="AprobadosReprobados">Ejercicio 3: Aprobados y Reprobados</a></li>
+                <li class="list-group-item"><a asp-controller="Listas" asp-action="EliminarOrdenarProductos">Ejercicio 4: Ordenar Productos</a></li>
+                <li class="list-group-item"><a asp-controller="Listas" asp-action="ListarPalabrasPorLetra">Ejercicio 5: Palabras por Letra</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Pilas -->
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 card-custom">
+            <div class="card-header d-flex justify-content-center align-items-center">
+                <i class="bi bi-stack me-2"></i>
+                <h3 class="m-0">Pilas</h3>
+            </div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item"><a asp-controller="Pilas" asp-action="InvertirPalabra">Ejercicio 1: Invertir Palabra</a></li>
+                <li class="list-group-item"><a asp-controller="Pilas" asp-action="Palindromo">Ejercicio 2: Palíndromo</a></li>
+                <li class="list-group-item"><a asp-controller="Pilas" asp-action="SumaNumerosGrandes">Ejercicio 3: Suma Números Grandes</a></li>
+                <li class="list-group-item"><a asp-controller="Pilas" asp-action="ReemplazarValor">Ejercicio 4: Reemplazar Valor</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Colas -->
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 card-custom">
+            <div class="card-header d-flex justify-content-center align-items-center">
+                <i class="bi bi-people-fill me-2"></i>
+                <h3 class="m-0">Colas</h3>
+            </div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item"><a asp-controller="Colas" asp-action="VentanillaBanco">Ejercicio 1: Ventanilla de Banco</a></li>
+                <li class="list-group-item"><a asp-controller="Colas" asp-action="PintarCoches">Ejercicio 2: Pintar Coches</a></li>
+                <li class="list-group-item"><a asp-controller="Colas" asp-action="Estacionamiento">Ejercicio 3: Estacionamiento</a></li>
+            </ul>
+        </div>
+    </div>
+</div>

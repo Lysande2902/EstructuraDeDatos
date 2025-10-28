@@ -1,0 +1,252 @@
+@{
+    ViewData["Title"] = "Suma de Números Grandes";
+}
+<div class="text-center">
+    <h1 class="display-6 fw-bold">Pilas: Suma de Números Grandes</h1>
+    <p class="lead text-muted">Usa dos pilas para sumar números que exceden la capacidad de los tipos de datos estándar.</p>
+</div>
+<hr class="mb-4">
+<div class="row">
+    <div class="col-lg-12">
+        <div class="exercise-card">
+            <div class="row">
+                <!-- Panel de Control (Izquierda) -->
+                <div class="col-lg-4 control-panel">
+                    <h4 class="text-white-50 mb-3">Panel de Control</h4>
+                    <form id="sumaForm" class="mb-4">
+                        <div class="mb-3">
+                            <label for="numero1" class="form-label">Primer número:</label>
+                            <input type="text" id="numero1" name="numero1" class="form-control form-control-lg" placeholder="Ej: 987" required pattern="[0-9]+" title="Solo se admiten números."/>
+                        </div>
+                        <div class="mb-3">
+                            <label for="numero2" class="form-label">Segundo número:</label>
+                            <input type="text" id="numero2" name="numero2" class="form-control form-control-lg" placeholder="Ej: 543" required pattern="[0-9]+" title="Solo se admiten números."/>
+                        </div>
+                        <button type="submit" class="btn btn-danger w-100 btn-lg" id="sumarBtn"><i class="bi bi-plus-slash-minus me-2"></i>Iniciar Suma</button>
+                    </form>
+
+                    <h5 class="text-white-50 mt-4 mb-3">Controles de Animación</h5>
+                    <div class="animation-controls">
+                        <button id="playPauseBtn" class="btn btn-info" disabled data-bs-toggle="tooltip" data-bs-placement="top" title="Play/Pausa"><i class="bi bi-play-fill"></i></button>
+                        <button id="resetBtn" class="btn btn-secondary" disabled data-bs-toggle="tooltip" data-bs-placement="top" title="Reiniciar"><i class="bi bi-arrow-clockwise"></i></button>
+                        <div class="d-flex align-items-center flex-grow-1">
+                            <label for="speedRange" class="form-label text-nowrap me-2 mb-0" data-bs-toggle="tooltip" data-bs-placement="top" title="Ajustar Velocidad"><i class="bi bi-speedometer2"></i></label>
+                            <input type="range" class="form-range" min="100" max="1500" value="800" step="100" id="speedRange">
+                        </div>
+                    </div>
+
+                    <h5 class="text-white-50 mt-4 mb-3">Estado</h5>
+                    <div class="status-panel" id="statusPanel">
+                        Esperando entrada...
+                    </div>
+
+                    <div id="resultadoContainer" class="alert mt-4 d-none" role="alert"></div>
+                </div>
+
+                <!-- Panel de Visualización (Derecha) -->
+                <div class="col-lg-8 visualization-panel">
+                    <h4 class="text-white-50 mb-3 text-center">Visualización del Proceso</h4>
+                    <div class="stack-visualization text-center">
+                        <div class="row justify-content-center align-items-start">
+                            <!-- Pila 1 -->
+                            <div class="col">
+                                <h6>Número 1</h6>
+                                <div class="stack-container" id="stack1Container" style="min-height: 250px;"></div>
+                            </div>
+                            <!-- Pila 2 -->
+                            <div class="col">
+                                <h6>Número 2</h6>
+                                <div class="stack-container" id="stack2Container" style="min-height: 250px;"></div>
+                            </div>
+                        </div>
+
+                        <!-- Área de Cálculo -->
+                        <div class="calculation-area">
+                            <h6 class="text-muted">Cálculo Actual</h6>
+                            <div id="calculationStep" class="calculation-step" style="opacity: 0; transform: scale(0.9);">
+                                <span>Esperando...</span>
+                            </div>
+                        </div>
+
+                        <!-- Resultado Final -->
+                        <div class="mt-3">
+                            <h6 class="text-muted">Resultado</h6>
+                            <div id="finalResult" class="result-container-final text-success bg-dark p-3 rounded font-monospace">
+                                &nbsp;
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // --- Inicialización de elementos y variables ---
+        const form = document.getElementById('sumaForm');
+        const numero1Input = document.getElementById('numero1');
+        const numero2Input = document.getElementById('numero2');
+        const sumarBtn = document.getElementById('sumarBtn');
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const speedRange = document.getElementById('speedRange');
+        const statusPanel = document.getElementById('statusPanel');
+        const stack1Container = document.getElementById('stack1Container');
+        const stack2Container = document.getElementById('stack2Container');
+        const calculationStepDiv = document.getElementById('calculationStep');
+        const finalResultDiv = document.getElementById('finalResult');
+        const resultadoContainer = document.getElementById('resultadoContainer');
+
+        // Inicialización correcta de Tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function (tooltipTriggerEl) { return new bootstrap.Tooltip(tooltipTriggerEl); });
+
+        let stack1 = [], stack2 = [];
+        let acarreo = 0;
+        let resultado = '';
+        let animationTimeout;
+        let isPaused = true, isFinished = false, currentPhase = 'idle';
+
+        // --- Lógica Principal ---
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            if (currentPhase !== 'idle' && !isFinished) return;
+            
+            const num1 = numero1Input.value;
+            const num2 = numero2Input.value;
+
+            if (!/^[0-9]+$/.test(num1) || !/^[0-9]+$/.test(num2)) {
+                mostrarResultado("Por favor, ingresa solo números válidos.", 'alert-warning');
+                return;
+            }
+            
+            setupAndPlay(num1, num2);
+        });
+
+        function setupAndPlay(num1, num2) {
+            resetState();
+            isPaused = false;
+            isFinished = false;
+            currentPhase = 'push';
+            
+            sumarBtn.disabled = true;
+            playPauseBtn.disabled = false;
+            resetBtn.disabled = false;
+
+            stack1 = num1.split('').map(Number);
+            stack2 = num2.split('').map(Number);
+
+            // Llenar visualmente las pilas
+            num1.split('').forEach(digit => addStackItem(stack1Container, digit, true));
+            num2.split('').forEach(digit => addStackItem(stack2Container, digit, true));
+            
+            statusPanel.textContent = 'Pilas listas. Iniciando suma...';
+            updatePlayPauseButton();
+            animationTimeout = setTimeout(runAnimationStep, 1600 - speedRange.value);
+        }
+
+        function runAnimationStep() {
+            if (isPaused || isFinished) return;
+
+            let delay = 1600 - speedRange.value;
+
+            if (stack1.length > 0 || stack2.length > 0 || acarreo > 0) {
+                const d1 = stack1.length > 0 ? stack1.pop() : 0;
+                const d2 = stack2.length > 0 ? stack2.pop() : 0;
+
+                // Animar POP
+                popStackItem(stack1Container, d1);
+                popStackItem(stack2Container, d2);
+
+                statusPanel.textContent = `Sumando: ${d1} + ${d2} + ${acarreo} (acarreo)`;
+                
+                setTimeout(() => {
+                    if (isPaused) return;
+                    calculationStepDiv.style.opacity = 1;
+                    calculationStepDiv.style.transform = 'scale(1)';
+                    calculationStepDiv.innerHTML = `
+                        <span class="digit" style="animation: digit-appear 0.4s forwards;">${d1}</span> 
+                        <span>+</span> 
+                        <span class="digit" style="animation: digit-appear 0.4s 0.2s forwards;">${d2}</span> 
+                        <span>+</span> 
+                        <span class="carry" style="animation: digit-appear 0.4s 0.4s forwards;">${acarreo}</span>
+                    `;
+                }, 400); // Esperar a que termine la animación de pop
+
+                setTimeout(() => {
+                    if (isPaused) return;
+                    const suma = d1 + d2 + acarreo;
+                    const digitoResultado = suma % 10;
+                    acarreo = Math.floor(suma / 10);
+                    resultado = digitoResultado + resultado;
+
+                    statusPanel.textContent = `Suma = ${suma}. Resultado: ${digitoResultado}, Acarreo: ${acarreo}`;
+                    calculationStepDiv.innerHTML += ` <span style="animation: digit-appear 0.4s forwards;">=</span> <span class="result" style="animation: digit-appear 0.4s forwards;">${suma}</span>`;
+                    finalResultDiv.textContent = resultado;
+
+                    animationTimeout = setTimeout(runAnimationStep, delay);
+                }, delay / 2);
+            } else {
+                finishAnimation();
+            }
+        }
+
+        function finishAnimation() {
+            isFinished = true;
+            isPaused = true;
+            statusPanel.textContent = '¡Suma Completada!';
+            mostrarResultado(`<strong>¡Éxito!</strong> El resultado es: <strong>${resultado}</strong>`, 'alert-success');
+            sumarBtn.disabled = false;
+            updatePlayPauseButton();
+        }
+
+        // --- Funciones de Utilidad y Estado ---
+        function addStackItem(container, value, instant = false) {
+            const item = document.createElement('div');
+            item.className = 'stack-item';
+            item.textContent = value;
+            if (!instant) item.style.animation = 'push-animation 0.3s forwards';
+            else { item.style.opacity = 1; item.style.animation = 'none'; }
+            container.appendChild(item);
+        }
+
+        function popStackItem(container, value) {
+            const items = container.querySelectorAll('.stack-item');
+            if (items.length > 0) {
+                const topItem = items[items.length - 1];
+                if (parseInt(topItem.textContent) === value) {
+                    topItem.style.animation = 'pop-animation 0.4s forwards';
+                    setTimeout(() => topItem.remove(), 400);
+                }
+            }
+        }
+        
+        function resetState() {
+            clearTimeout(animationTimeout);
+            stack1 = []; stack2 = []; acarreo = 0; resultado = '';
+            currentPhase = 'idle'; isFinished = true; isPaused = true;
+
+            stack1Container.innerHTML = '';
+            stack2Container.innerHTML = '';
+            finalResultDiv.innerHTML = '&nbsp;';
+            calculationStepDiv.innerHTML = '<span></span>';
+            calculationStepDiv.style.opacity = 0;
+            resultadoContainer.classList.add('d-none');
+            statusPanel.textContent = 'Esperando entrada...';
+            
+            sumarBtn.disabled = false;
+            playPauseBtn.disabled = true;
+            resetBtn.disabled = true;
+            updatePlayPauseButton();
+        }
+
+        playPauseBtn.addEventListener('click', () => { if (!isFinished) { isPaused = !isPaused; updatePlayPauseButton(); if (!isPaused) runAnimationStep(); } });
+        resetBtn.addEventListener('click', () => { resetState(); if (numero1Input.value && numero2Input.value) setupAndPlay(numero1Input.value, numero2Input.value); });
+        function updatePlayPauseButton() { playPauseBtn.innerHTML = isPaused ? '<i class="bi bi-play-fill"></i>' : '<i class="bi bi-pause-fill"></i>'; }
+        function mostrarResultado(mensaje, alertClass) { resultadoContainer.innerHTML = mensaje; resultadoContainer.className = `alert ${alertClass} mt-4`; }
+    });
+</script>
+}
