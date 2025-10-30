@@ -1,2 +1,147 @@
-<h2>Ejercicio de Listas</h2>
-<p>Esta sección será implementada por otro miembro del equipo.</p>
+@{
+    ViewData["Title"] = "Pares e Impares";
+}
+<div class="text-center">
+    <h1 class="display-6 fw-bold">Listas: Ejercicio 2 - Pares e Impares (Aleatorios)</h1>
+    <p class="lead text-muted">Genera una lista de números aleatorios y los clasifica en listas de pares e impares.</p>
+</div>
+<hr class="mb-4">
+
+<div class="row">
+    <div class="col-lg-12">
+        <div class="exercise-card">
+            <div class="row">
+                <!-- Panel de Control (Izquierda) -->
+                <div class="col-lg-4 control-panel">
+                    <h4 class="text-white-50 mb-3">Generar Números</h4>
+                    <form id="generateNumbersForm" class="mb-4">
+                        <div class="mb-3">
+                            <label for="quantityInput" class="form-label">Cantidad de números a generar:</label>
+                            <input type="number" id="quantityInput" class="form-control form-control-lg" value="10" min="1" max="100" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 btn-lg"><i class="bi bi-dice-5-fill me-2"></i>Generar y Clasificar</button>
+                    </form>
+
+                    <hr>
+
+                    <button id="clearBtn" class="btn btn-danger w-100 btn-lg"><i class="bi bi-trash-fill me-2"></i>Limpiar Listas</button>
+
+                    <div id="alertContainer" class="mt-4">
+                        <!-- Las alertas se mostrarán aquí -->
+                    </div>
+                </div>
+
+                <!-- Panel de Visualización (Derecha) -->
+                <div class="col-lg-8 visualization-panel">
+                    <div class="row">
+                        <!-- Lista de Pares -->
+                        <div class="col-md-6">
+                            <h4 class="text-white-50 mb-3 text-center">
+                                <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                Lista de Pares (<span id="paresCount">0</span>)
+                            </h4>
+                            <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                                <ul id="paresList" class="list-group">
+                                    <li class="list-group-item list-group-item-dark text-muted text-center">Aún no hay números pares.</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <!-- Lista de Impares -->
+                        <div class="col-md-6">
+                            <h4 class="text-white-50 mb-3 text-center">
+                                <i class="bi bi-x-circle-fill text-danger me-2"></i>
+                                Lista de Impares (<span id="imparesCount">0</span>)
+                            </h4>
+                            <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                                <ul id="imparesList" class="list-group">
+                                    <li class="list-group-item list-group-item-dark text-muted text-center">Aún no hay números impares.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const generateForm = document.getElementById('generateNumbersForm');
+        const quantityInput = document.getElementById('quantityInput');
+        const clearBtn = document.getElementById('clearBtn');
+        const paresList = document.getElementById('paresList');
+        const imparesList = document.getElementById('imparesList');
+        const paresCount = document.getElementById('paresCount');
+        const imparesCount = document.getElementById('imparesCount');
+        const alertContainer = document.getElementById('alertContainer');
+
+        let pares = [];
+        let impares = [];
+
+        generateForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const quantity = parseInt(quantityInput.value, 10);
+
+            if (isNaN(quantity) || quantity <= 0) {
+                showAlert('Por favor, ingresa una cantidad válida.', 'warning');
+                return;
+            }
+
+            // Limpiar listas antes de generar nuevas
+            pares = [];
+            impares = [];
+
+            for (let i = 0; i < quantity; i++) {
+                const numeroAleatorio = Math.floor(Math.random() * 1000) + 1; // Números entre 1 y 1000
+                if (numeroAleatorio % 2 === 0) {
+                    pares.push(numeroAleatorio);
+                } else {
+                    impares.push(numeroAleatorio);
+                }
+            }
+
+            updateView();
+            showAlert(`${quantity} números aleatorios han sido generados y clasificados.`, 'success');
+        });
+
+        clearBtn.addEventListener('click', function() {
+            pares = [];
+            impares = [];
+            updateView();
+            showAlert('Las listas han sido limpiadas.', 'info');
+        });
+
+        function updateView() {
+            // Ordenar y mostrar listas
+            pares.sort((a, b) => a - b);
+            impares.sort((a, b) => a - b);
+
+            renderList(paresList, pares, 'Aún no hay números pares.');
+            renderList(imparesList, impares, 'Aún no hay números impares.');
+
+            // Actualizar contadores
+            paresCount.textContent = pares.length;
+            imparesCount.textContent = impares.length;
+        }
+
+        function renderList(ulElement, list, emptyMessage) {
+            if (list.length === 0) {
+                ulElement.innerHTML = `<li class="list-group-item list-group-item-dark text-muted text-center">${emptyMessage}</li>`;
+            } else {
+                ulElement.innerHTML = list.map(item => `<li class="list-group-item list-group-item-dark">${item}</li>`).join('');
+            }
+        }
+
+        function showAlert(message, type) {
+            alertContainer.innerHTML = `
+                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            `;
+        }
+    });
+</script>
+}

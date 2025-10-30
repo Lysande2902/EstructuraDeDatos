@@ -1,2 +1,202 @@
-<h2>Ejercicio de Listas</h2>
-<p>Esta sección será implementada por otro miembro del equipo.</p>
+@{
+    ViewData["Title"] = "Productos Disponibles y Retirados";
+}
+<div class="text-center">
+    <h1 class="display-6 fw-bold">Listas: Ejercicio 1 - Productos Disponibles y Retirados</h1>
+    <p class="lead text-muted">Administra dos listas: una para productos disponibles y otra para productos retirados.</p>
+</div>
+<hr class="mb-4">
+
+<div class="row">
+    <div class="col-lg-12">
+        <div class="exercise-card">
+            <div class="row">
+                <!-- Panel de Control (Izquierda) -->
+                <div class="col-lg-3 control-panel">
+                    <h4 class="text-white-50 mb-3">Control de Productos</h4>
+                    <p class="text-white-75">
+                        Agrega productos al almacén. El nombre, la cantidad y el precio se generan automáticamente.
+                    </p>
+                    <button id="addProductBtn" class="btn btn-success text-dark w-100 btn-lg mb-4">
+                        <i class="bi bi-box-seam me-2"></i>Agregar Producto
+                    </button>
+
+                    <hr>
+
+                    <div id="alertContainer" class="mt-4">
+                        <!-- Las alertas se mostrarán aquí -->
+                    </div>
+                </div>
+
+                <!-- Panel de Visualización (Derecha) -->
+                <div class="col-lg-9 visualization-panel">
+                    <!-- Lista de Productos Disponibles -->
+                    <div class="mb-5">
+                        <h4 class="text-white-50 mb-3">
+                            <i class="bi bi-check-circle-fill text-success me-2"></i>
+                            Productos Disponibles (<span id="availableCount">0</span>)
+                        </h4>
+                        <div class="table-responsive" style="max-height: 250px; overflow-y: auto;">
+                            <table class="table table-dark table-striped table-hover">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Nombre</th>
+                                        <th scope="col">Cantidad</th>
+                                        <th scope="col">Precio</th>
+                                        <th scope="col">Acción</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="availableProductsBody">
+                                    <!-- Filas de productos disponibles -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Lista de Productos Retirados -->
+                    <div>
+                        <h4 class="text-white-50 mb-3">
+                            <i class="bi bi-x-circle-fill text-danger me-2"></i>
+                            Productos Retirados (<span id="removedCount">0</span>)
+                        </h4>
+                        <div class="table-responsive" style="max-height: 250px; overflow-y: auto;">
+                            <table class="table table-dark table-striped table-hover">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Nombre</th>
+                                        <th scope="col">Cantidad</th>
+                                        <th scope="col">Precio</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="removedProductsBody">
+                                    <!-- Filas de productos retirados -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        /*
+            DOCUMENTACIÓN DEL EJERCICIO 1: PRODUCTOS DISPONIBLES Y RETIRADOS
+            -----------------------------------------------------------------
+            Este ejercicio me pareció bastante directo. La idea era simular un inventario simple.
+
+            ENTRADA:
+            - El usuario no introduce datos directamente. La única entrada es el clic en el botón "Agregar Producto".
+            - También se captura el clic en el botón "Retirar" de un producto específico.
+
+            PROCESO:
+            - Se usan dos listas (arrays de JS) para manejar el estado: 'availableProducts' y 'removedProducts'.
+            - Al agregar, se crea un objeto 'newProduct' con datos aleatorios y se añade a 'availableProducts'.
+            - Al retirar, se busca el producto en 'availableProducts', se saca de esa lista y se mete en 'removedProducts'.
+
+            SALIDA:
+            - Se actualizan visualmente dos tablas HTML, una para cada lista.
+            - Se actualizan los contadores que muestran la cantidad de productos en cada estado.
+
+            TIPO DE LISTAS USADAS:
+            - Se utilizan dos Arrays de JavaScript para simular las listas: 'availableProducts' y 'removedProducts'.
+
+            MÉTODOS DE LAS LISTAS UTILIZADOS:
+            - .push(): Para agregar un producto a cualquiera de las dos listas.
+            - .findIndex(): Para encontrar la posición del producto que se va a retirar de la lista de disponibles.
+            - .splice(): Para eliminar el producto de la lista 'availableProducts' una vez encontrado.
+        */
+
+        // --- Elementos del DOM ---
+        const addProductBtn = document.getElementById('addProductBtn');
+        const availableProductsBody = document.getElementById('availableProductsBody');
+        const removedProductsBody = document.getElementById('removedProductsBody');
+        const availableCountSpan = document.getElementById('availableCount');
+        const removedCountSpan = document.getElementById('removedCount');
+        const alertContainer = document.getElementById('alertContainer');
+
+        let availableProducts = [];
+        let removedProducts = [];
+        let productCounter = 0;
+
+        // --- Lógica para Agregar Producto ---
+        addProductBtn.addEventListener('click', function() {
+            productCounter++;
+            const newProduct = {
+                nombre: `Producto ${productCounter}`,
+                cantidad: Math.floor(Math.random() * 100) + 1, // Cantidad aleatoria entre 1 y 100
+                precio: parseFloat((Math.random() * 500 + 10).toFixed(2)) // Precio aleatorio entre 10.00 y 510.00
+            };
+
+            availableProducts.push(newProduct);
+            updateView();
+            showAlert(`'${newProduct.nombre}' agregado a la lista de disponibles.`, 'success');
+        });
+
+        // --- Lógica para Retirar Producto (delegación de eventos) ---
+        availableProductsBody.addEventListener('click', function(e) {
+            if (e.target && e.target.matches('button.retirar-btn')) {
+                const productName = e.target.dataset.name;
+                const productIndex = availableProducts.findIndex(p => p.nombre === productName);
+
+                if (productIndex > -1) {
+                    const [removedProduct] = availableProducts.splice(productIndex, 1);
+                    removedProducts.push(removedProduct);
+                    updateView();
+                    showAlert(`'${removedProduct.nombre}' ha sido retirado.`, 'warning');
+                }
+            }
+        });
+
+        // --- Funciones de la Vista ---
+        function updateView() {
+            // Actualizar tabla de disponibles
+            renderTable(availableProductsBody, availableProducts, true);
+            // Actualizar tabla de retirados
+            renderTable(removedProductsBody, removedProducts, false);
+            // Actualizar contadores
+            availableCountSpan.textContent = availableProducts.length;
+            removedCountSpan.textContent = removedProducts.length;
+        }
+
+        function renderTable(tbody, productList, isAvailable) {
+            tbody.innerHTML = '';
+            if (productList.length === 0) {
+                const cols = isAvailable ? 4 : 3;
+                tbody.innerHTML = `<tr><td colspan="${cols}" class="text-center text-muted">No hay productos en esta lista.</td></tr>`;
+                return;
+            }
+
+            productList.forEach(product => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${product.nombre}</td>
+                    <td>${product.cantidad}</td>
+                    <td>${formatCurrency(product.precio)}</td>
+                    ${isAvailable ? `<td><button class="btn btn-sm btn-danger retirar-btn" data-name="${product.nombre}">Retirar</button></td>` : ''}
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function showAlert(message, type) {
+            alertContainer.innerHTML = `
+                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            `;
+        }
+
+        function formatCurrency(amount) {
+            return amount.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' });
+        }
+
+        // Carga inicial
+        updateView();
+    });
+</script>
+}

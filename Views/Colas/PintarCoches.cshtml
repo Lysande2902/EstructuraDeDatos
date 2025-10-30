@@ -1,2 +1,326 @@
-<h2>Ejercicio de Colas</h2>
-<p>Esta sección será implementada próximamente.</p>
+@{
+    ViewData["Title"] = "Juego: Pintar Coches";
+}
+<div class="text-center">
+    <h1 class="display-6 fw-bold">Colas: Juego de Pintar Coches</h1>
+    <p class="lead text-muted">Pinta los coches en el orden que llegan antes de que la fila se llene.</p>
+</div>
+<hr class="mb-4">
+
+<div class="row">
+    <div class="col-lg-12">
+        <div class="exercise-card position-relative">
+
+            <!-- Pantalla de Game Over -->
+            <div id="gameOverScreen" class="game-overlay">
+                <h1 class="display-3 fw-bold text-danger">¡Juego Terminado!</h1>
+                <p class="lead">La fila de coches se ha llenado.</p>
+                <div class="mt-3 fs-4">
+                    <p>Coches Pintados: <strong id="finalScore" class="text-success">0</strong></p>
+                    <p>Tiempo Total: <strong id="finalTime" class="text-info">0s</strong></p>
+                </div>
+                <button id="restartBtn" class="btn btn-lg btn-primary mt-4"><i class="bi bi-arrow-clockwise me-2"></i>Jugar de Nuevo</button>
+            </div>
+
+            <!-- Contenido del Juego -->
+            <div class="row">
+                <!-- Panel de Visualización -->
+                <div class="col-lg-8 visualization-panel border-end-0">
+                    <h4 class="text-white-50 mb-3 text-center">Línea de Producción</h4>
+                    <div class="queue-visualization">
+                        <div class="d-flex justify-content-between align-items-center text-muted mb-2">
+                            <span><i class="bi bi-brush"></i> ZONA DE PINTURA</span>
+                            <span><i class="bi bi-truck"></i> LLEGADA</span>
+                        </div>
+                        <div class="queue-container" id="queueContainer" style="min-height: 150px;">
+                            <!-- Los coches se mostrarán aquí -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Panel de Control y Estado -->
+                <div class="col-lg-4 control-panel border-start border-secondary">
+                    <div id="gameControls">
+                        <h4 class="text-white-50 mb-3">Paleta de Colores</h4>
+                        <div id="colorPalette" class="color-palette">
+                            <!-- Los botones de colores se agregarán aquí -->
+                        </div>
+                        <div id="colorPalette2" class="color-palette">
+                            <!-- La segunda paleta de colores irá aquí -->
+                        </div>
+                        <div id="colorPalette3" class="color-palette">
+                            <!-- La tercera paleta de colores irá aquí -->
+                        </div>
+                        <hr class="my-4">
+                        <h4 class="text-white-50 mb-3">Estado del Juego</h4>
+                        <div class="d-flex justify-content-around text-center">
+                            <div>
+                                <p class="mb-1 text-muted">Puntuación</p>
+                                <p id="scoreDisplay" class="fs-2 fw-bold text-success">0</p>
+                            </div>
+                            <div>
+                                <p class="mb-1 text-muted">Tiempo</p>
+                                <p id="timeDisplay" class="fs-2 fw-bold text-info">0s</p>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <p class="text-center text-muted mb-1">Próximo coche en:</p>
+                            <div class="progress" style="height: 20px;">
+                                <div id="nextCarProgress" class="progress-bar progress-bar-striped progress-bar-animated bg-danger" role="progressbar" style="width: 100%" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="startScreen" class="text-center">
+                        <h4 class="text-white-50">¿Listo para jugar?</h4>
+                        <p class="text-muted">Pinta el primer coche de la fila con el color correcto. ¡No dejes que la fila llegue a 5 coches!</p>
+                        <button id="startBtn" class="btn btn-lg btn-danger w-100 mt-3"><i class="bi bi-play-circle-fill me-2"></i>Iniciar Juego</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // --- Elementos del DOM ---
+        const queueContainer = document.getElementById('queueContainer');
+        const colorPalette = document.getElementById('colorPalette');
+        const colorPalette2 = document.getElementById('colorPalette2');
+        const colorPalette3 = document.getElementById('colorPalette3');
+        const scoreDisplay = document.getElementById('scoreDisplay');
+        const timeDisplay = document.getElementById('timeDisplay');
+        const nextCarProgress = document.getElementById('nextCarProgress');
+        const startBtn = document.getElementById('startBtn');
+        const restartBtn = document.getElementById('restartBtn');
+        const startScreen = document.getElementById('startScreen');
+        const gameControls = document.getElementById('gameControls');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const finalScore = document.getElementById('finalScore');
+        const finalTime = document.getElementById('finalTime');
+
+        // --- Configuración del Juego ---
+        const COLORS = [
+            { name: 'Rojo', class: 'red' },
+            { name: 'Azul', class: 'blue' },
+            { name: 'Verde', class: 'green' },
+            { name: 'Amarillo', class: 'yellow' },
+            { name: 'Morado', class: 'purple' }
+        ];
+        const COLORS_2 = [
+            { name: 'Naranja', class: 'orange' },
+            { name: 'Cian', class: 'cyan' },
+            { name: 'Rosa', class: 'pink' },
+            { name: 'Blanco', class: 'white' },
+            { name: 'Negro', class: 'black' }
+        ];
+        const COLORS_3 = [
+            { name: 'Gris', class: 'gray' },
+            { name: 'Marrón', class: 'brown' },
+            { name: 'Lima', class: 'lime' },
+            { name: 'Teal', class: 'teal' },
+            { name: 'Índigo', class: 'indigo' }
+        ];
+        const ALL_COLORS = [...COLORS, ...COLORS_2, ...COLORS_3];
+
+        const MAX_CARS_IN_QUEUE = 5;
+        let carQueue = [];
+        let score = 0;
+        let time = 0;
+        let carArrivalSpeed = 7000; // 7 segundos iniciales
+        let gameIntervals = [];
+
+        // --- Funciones del Juego ---
+        function startGame() {
+            // Resetear estado
+            carQueue = [];
+            score = 0;
+            time = 0;
+            carArrivalSpeed = 7000;
+            gameIntervals.forEach(clearInterval);
+            gameIntervals = [];
+            queueContainer.innerHTML = '';
+            updateDisplays();
+
+            // Ocultar/Mostrar pantallas
+            startScreen.style.display = 'none';
+            gameControls.style.display = 'block';
+            gameOverScreen.classList.remove('visible');
+
+            // Iniciar bucles del juego
+            scheduleNextCar();
+            gameIntervals.push(setInterval(() => {
+                time++;
+                updateDisplays();
+            }, 1000));
+        }
+
+        function addCar() {
+            if (carQueue.length >= MAX_CARS_IN_QUEUE) {
+                endGame();
+                return;
+            }
+
+            const randomColor = ALL_COLORS[Math.floor(Math.random() * ALL_COLORS.length)];
+            const car = { color: randomColor };
+            carQueue.push(car);
+
+            // El coche se crea "sin pintar" (gris)
+            const carDiv = document.createElement('div');
+            carDiv.className = `car-item car-unpainted`;
+            carDiv.innerHTML = `
+                <div class="plate">NUEVO</div>
+                <div class="owner"></div>
+                <div class="color-tag">${car.color.name}</div>
+            `;
+            queueContainer.appendChild(carDiv);
+            setTimeout(() => {
+                carDiv.style.animation = 'push-animation 0.5s forwards';
+            }, 10);
+
+            scheduleNextCar();
+        }
+
+        function scheduleNextCar() {
+            let remainingTime = carArrivalSpeed;
+            const carTimer = setInterval(() => {
+                remainingTime -= 100;
+                const progress = (remainingTime / carArrivalSpeed) * 100;
+                nextCarProgress.style.width = `${progress}%`;
+
+                if (remainingTime <= 0) {
+                    clearInterval(carTimer);
+                    addCar();
+                }
+            }, 100);
+            gameIntervals.push(carTimer);
+        }
+
+        function paintCar(selectedColorClass) {
+            if (carQueue.length === 0 || colorPalette.classList.contains('disabled')) return;
+
+            const carToPaint = carQueue[0];
+            const carDiv = queueContainer.firstChild;
+
+            if (carToPaint.color.class === selectedColorClass) {
+                // Acierto
+                score++;
+                updateDisplays(); // <-- CORRECCIÓN: Actualizar la puntuación inmediatamente.
+                carQueue.shift(); // Eliminar de la cola
+
+                if (carDiv) {
+                    // 1. Pinta el coche del color correcto
+                    carDiv.classList.remove('car-unpainted');
+                    carDiv.classList.add(`car-${selectedColorClass}`);
+
+                    // 2. Deshabilita la paleta y anima la salida
+                    colorPalette.classList.add('disabled');
+                    colorPalette2.classList.add('disabled');
+                    colorPalette3.classList.add('disabled');
+                    setTimeout(() => {
+                        carDiv.classList.add('popping-out'); // <-- CORRECCIÓN: Usar una clase para la animación de salida.
+                        setTimeout(() => {
+                            carDiv.remove();
+                            colorPalette.classList.remove('disabled'); // Rehabilita la paleta
+                            colorPalette2.classList.remove('disabled');
+                            colorPalette3.classList.remove('disabled');
+                        }, 400); // Sincronizado con la duración de la animación
+                    }, 200); // Pequeña pausa para ver el coche pintado
+                }
+
+                // Aumentar velocidad cada 2 coches de forma gradual
+                if (score > 0 && score % 2 === 0 && carArrivalSpeed > 3000) {
+                    carArrivalSpeed -= 1000; // Reduce el tiempo en 1 segundo
+                }
+            } else {
+                // Fallo - Aplicar animación de vibración con una clase
+                carDiv.classList.add('shake');
+                setTimeout(() => carDiv.classList.remove('shake'), 500);
+            }
+        }
+
+        function endGame() {
+            gameIntervals.forEach(clearInterval);
+            gameIntervals = [];
+            finalScore.textContent = score;
+            finalTime.textContent = `${time}s`;
+            gameOverScreen.classList.add('visible');
+        }
+
+        // --- Funciones de la Vista ---
+        function createPalette() {
+            // Paleta 1
+            colorPalette.innerHTML = '';
+            COLORS.forEach(color => {
+                const btn = document.createElement('button');
+                btn.className = `color-btn btn-${color.class}`;
+                btn.dataset.colorClass = color.class;
+                btn.addEventListener('click', () => paintCar(color.class));
+                colorPalette.appendChild(btn);
+            });
+            // Paleta 2
+            colorPalette2.innerHTML = '';
+            COLORS_2.forEach(color => {
+                const btn = document.createElement('button');
+                btn.className = `color-btn btn-${color.class}`;
+                btn.dataset.colorClass = color.class;
+                btn.addEventListener('click', () => paintCar(color.class));
+                colorPalette2.appendChild(btn);
+            });
+            // Paleta 3
+            colorPalette3.innerHTML = '';
+            COLORS_3.forEach(color => {
+                const btn = document.createElement('button');
+                btn.className = `color-btn btn-${color.class}`;
+                btn.dataset.colorClass = color.class;
+                btn.addEventListener('click', () => paintCar(color.class));
+                colorPalette3.appendChild(btn);
+            });
+        }
+
+        function updateDisplays() {
+            scoreDisplay.textContent = score;
+            timeDisplay.textContent = `${time}s`;
+        }
+
+        // --- Inicialización ---
+        function init() {
+            gameControls.style.display = 'none';
+            createPalette();
+            startBtn.addEventListener('click', startGame);
+            restartBtn.addEventListener('click', startGame);
+        }
+
+        init();
+    });
+</script>
+
+<style>
+    /* Animación para cuando se falla el color */
+    .color-palette.disabled {
+        pointer-events: none;
+        opacity: 0.6;
+    }
+
+    #colorPalette3.disabled {
+        pointer-events: none;
+        opacity: 0.6;
+    }
+
+    #colorPalette2.disabled {
+        pointer-events: none;
+        opacity: 0.6;
+    }
+    
+    .popping-out {
+        animation: pop-animation-left 0.4s forwards;
+    }
+
+    @@keyframes shake-animation {
+        0%, 100% { transform: translateX(0); }
+        10%, 30%, 50%, 70%, 90% { transform: translateX(-10px); }
+        20%, 40%, 60%, 80% { transform: translateX(10px); }
+    }
+</style>
+}

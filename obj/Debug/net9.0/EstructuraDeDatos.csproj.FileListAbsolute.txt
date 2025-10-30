@@ -21,7 +21,6 @@ C:\Users\acer\EstructuraDeDatos\obj\Debug\net9.0\rjsmcshtml.dswa.cache.json
 C:\Users\acer\EstructuraDeDatos\obj\Debug\net9.0\scopedcss\Views\Shared\_Layout.cshtml.rz.scp.css
 C:\Users\acer\EstructuraDeDatos\obj\Debug\net9.0\scopedcss\bundle\EstructuraDeDatos.styles.css
 C:\Users\acer\EstructuraDeDatos\obj\Debug\net9.0\scopedcss\projectbundle\EstructuraDeDatos.bundle.scp.css
-C:\Users\acer\EstructuraDeDatos\obj\Debug\net9.0\compressed\zq28z57jc0-b9sayid5wm.gz
 C:\Users\acer\EstructuraDeDatos\obj\Debug\net9.0\compressed\m9s45o5jo3-61n19gt1b8.gz
 C:\Users\acer\EstructuraDeDatos\obj\Debug\net9.0\compressed\nzpis6ku0e-xtxxf3hu2r.gz
 C:\Users\acer\EstructuraDeDatos\obj\Debug\net9.0\compressed\9j4yob4c93-bqjiyaj88i.gz
@@ -94,4 +93,6 @@ C:\Users\acer\EstructuraDeDatos\obj\Debug\net9.0\refint\EstructuraDeDatos.dll
 C:\Users\acer\EstructuraDeDatos\obj\Debug\net9.0\EstructuraDeDatos.pdb
 C:\Users\acer\EstructuraDeDatos\obj\Debug\net9.0\EstructuraDeDatos.genruntimeconfig.cache
 C:\Users\acer\EstructuraDeDatos\obj\Debug\net9.0\ref\EstructuraDeDatos.dll
-C:\Users\acer\EstructuraDeDatos\obj\Debug\net9.0\compressed\38w0t600fg-5klluwvhtc.gz
+C:\Users\acer\EstructuraDeDatos\obj\Debug\net9.0\EstructuraDeDatos.sourcelink.json
+C:\Users\acer\EstructuraDeDatos\obj\Debug\net9.0\compressed\zq28z57jc0-ugcbigoxul.gz
+C:\Users\acer\EstructuraDeDatos\obj\Debug\net9.0\compressed\38w0t600fg-231rop4ybj.gz

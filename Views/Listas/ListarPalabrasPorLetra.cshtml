@@ -1,2 +1,210 @@
-<h2>Ejercicio de Listas</h2>
-<p>Esta sección será implementada por otro miembro del equipo.</p>
+@{
+    ViewData["Title"] = "Listar Palabras por Letra";
+}
+<div class="text-center">
+    <h1 class="display-6 fw-bold">Listas: Ejercicio 5 - Listar Palabras por Letra</h1>
+    <p class="lead text-muted">Clasifica una lista de palabras en sub-listas según su letra inicial.</p>
+</div>
+<hr class="mb-4">
+
+<div class="row">
+    <div class="col-lg-12">
+        <div class="exercise-card">
+            <div class="row">
+                <!-- Panel de Control (Izquierda) -->
+                <div class="col-lg-4 control-panel">
+                    <h4 class="text-white-50 mb-3">Agregar Palabras</h4>
+                    <form id="addWordsForm" class="mb-4">
+                        <div class="mb-3">
+                            <label for="wordInput" class="form-label">Escribe una o varias palabras:</label>
+                            <textarea id="wordInput" class="form-control form-control-lg" rows="6" placeholder="Escribe palabras separadas por espacios, comas o saltos de línea...&#10;Ej: Fresa, Fresca, Orilla, Oso, Peso, Pez"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 btn-lg"><i class="bi bi-plus-circle-fill me-2"></i>Clasificar Palabras</button>
+                    </form>
+
+                    <hr>
+
+                    <button id="clearBtn" class="btn btn-danger w-100 btn-lg"><i class="bi bi-trash-fill me-2"></i>Limpiar Todo</button>
+
+                    <div id="statsPanel" class="alert alert-info mt-4 text-center">
+                        Aún no hay palabras.
+                    </div>
+
+                    <div id="alertContainer" class="mt-4">
+                        <!-- Las alertas se mostrarán aquí -->
+                    </div>
+                </div>
+
+                <!-- Panel de Visualización (Derecha) -->
+                <div class="col-lg-8 visualization-panel">
+                    <h4 class="text-white-50 mb-3 text-center">Palabras Clasificadas</h4>
+                    <div id="wordListsContainer" class="row g-3" style="max-height: 500px; overflow-y: auto;">
+                        <!-- Las listas de palabras se mostrarán aquí -->
+                        <div id="emptyState" class="col-12 text-center text-muted mt-5">
+                            <i class="bi bi-card-list" style="font-size: 4rem;"></i>
+                            <p class="mt-2">Las listas aparecerán aquí cuando agregues palabras.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        /*
+            DOCUMENTACIÓN DEL EJERCICIO 5: LISTAR PALABRAS POR LETRA
+            ---------------------------------------------------------
+            Este fue el más complejo de la sección de listas. La clave aquí no fue usar una lista de listas,
+            sino un objeto que actúa como un diccionario. Me pareció una solución más elegante.
+
+            ENTRADA:
+            - Un bloque de texto con una o varias palabras. El usuario puede separarlas con espacios, comas, etc.
+
+            PROCESO:
+            - Se usa un objeto de JavaScript ('wordDictionary') para simular un diccionario donde cada 'clave' es una letra
+              y cada 'valor' es una lista (un array) de palabras.
+            - Se toma el texto del usuario y se divide en palabras individuales usando una expresión regular.
+            - Por cada palabra, se valida que solo contenga letras.
+            - Se obtiene la primera letra, se convierte a mayúscula y se usa como clave en el diccionario.
+            - Si la lista para esa letra no existe, se crea.
+            - Se añade la palabra (capitalizada y sin duplicados) a la lista correspondiente.
+
+            SALIDA:
+            - Se generan tarjetas (cards) dinámicamente, una por cada letra que tenga palabras.
+            - Las tarjetas se muestran ordenadas alfabéticamente.
+            - Las palabras dentro de cada tarjeta también se muestran ordenadas.
+
+            MÉTODOS DE LAS LISTAS (ARRAYS) UTILIZADOS:
+            - .push(), .includes(), .sort(), .join(), .reduce() (en Object.values)
+        */
+
+        // --- Elementos del DOM ---
+        const addForm = document.getElementById('addWordsForm');
+        const wordInput = document.getElementById('wordInput');
+        const clearBtn = document.getElementById('clearBtn');
+        const wordListsContainer = document.getElementById('wordListsContainer');
+        const statsPanel = document.getElementById('statsPanel');
+        const alertContainer = document.getElementById('alertContainer');
+        const emptyState = document.getElementById('emptyState');
+
+        let wordDictionary = {};
+
+        // --- Lógica para Agregar Palabras ---
+        addForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const inputText = wordInput.value;
+            if (!inputText.trim()) {
+                showAlert('El campo de texto está vacío.', 'warning');
+                return;
+            }
+
+            // Separadores: espacio, coma, punto y coma, salto de línea
+            const words = inputText.split(/[\s,;\n]+/);
+            let addedCount = 0;
+
+            words.forEach(word => {
+                const cleanWord = word.trim();
+                if (isValidWord(cleanWord)) {
+                    classifyWord(cleanWord);
+                    addedCount++;
+                }
+            });
+
+            if (addedCount > 0) {
+                updateView();
+                showAlert(`${addedCount} palabra(s) procesada(s) correctamente.`, 'success');
+                wordInput.value = '';
+            } else {
+                showAlert('No se encontraron palabras válidas para agregar.', 'warning');
+            }
+        });
+
+        // --- Lógica para Limpiar ---
+        clearBtn.addEventListener('click', function() {
+            if (Object.keys(wordDictionary).length === 0) {
+                showAlert('No hay nada que limpiar.', 'info');
+                return;
+            }
+            wordDictionary = {};
+            updateView();
+            showAlert('Todas las listas han sido eliminadas.', 'success');
+        });
+
+        // --- Funciones de Lógica ---
+        function isValidWord(word) {
+            // Valida que no esté vacío y que solo contenga letras (incluyendo acentos y ñ)
+            return word && /^[a-zA-ZñÑáéíóúÁÉÍÓÚ]+$/.test(word);
+        }
+
+        function classifyWord(word) {
+            const firstLetter = word.charAt(0).toUpperCase();
+            const capitalizedWord = word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+
+            if (!wordDictionary[firstLetter]) {
+                wordDictionary[firstLetter] = [];
+            }
+
+            if (!wordDictionary[firstLetter].includes(capitalizedWord)) {
+                wordDictionary[firstLetter].push(capitalizedWord);
+            }
+        }
+
+        // --- Funciones de la Vista ---
+        function updateView() {
+            wordListsContainer.innerHTML = '';
+            const sortedKeys = Object.keys(wordDictionary).sort();
+
+            if (sortedKeys.length === 0) {
+                wordListsContainer.appendChild(emptyState);
+                emptyState.style.display = 'block';
+            } else {
+                emptyState.style.display = 'none';
+                sortedKeys.forEach(letter => {
+                    const list = wordDictionary[letter].sort();
+                    const listCard = document.createElement('div');
+                    listCard.className = 'col-md-6 col-lg-4';
+                    listCard.innerHTML = `
+                        <div class="card card-body bg-dark text-white h-100">
+                            <h5 class="card-title text-danger">Palabras con '${letter}' (${list.length})</h5>
+                            <p class="card-text small">${list.join(', ')}</p>
+                        </div>
+                    `;
+                    wordListsContainer.appendChild(listCard);
+                });
+            }
+            updateStats();
+        }
+
+        function updateStats() {
+            const totalLetters = Object.keys(wordDictionary).length;
+            const totalWords = Object.values(wordDictionary).reduce((sum, list) => sum + list.length, 0);
+
+            if (totalWords === 0) {
+                statsPanel.textContent = 'Aún no hay palabras.';
+                statsPanel.className = 'alert alert-info mt-4 text-center';
+            } else {
+                statsPanel.innerHTML = `
+                    <strong>Palabras Únicas:</strong> ${totalWords} | 
+                    <strong>Listas Creadas:</strong> ${totalLetters}
+                `;
+                statsPanel.className = 'alert alert-success mt-4 text-center';
+            }
+        }
+
+        function showAlert(message, type) {
+            alertContainer.innerHTML = `
+                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            `;
+        }
+
+        // Carga inicial
+        updateView();
+    });
+</script>
+}

@@ -1,2 +1,155 @@
-<h2>Ejercicio de Listas</h2>
-<p>Esta sección será implementada por otro miembro del equipo.</p>
+@{
+    ViewData["Title"] = "Aprobados y Reprobados";
+}
+<div class="text-center">
+    <h1 class="display-6 fw-bold">Listas: Ejercicio 3 - Aprobados y Reprobados</h1>
+    <p class="lead text-muted">Clasifica estudiantes en listas de aprobados o reprobados según su calificación.</p>
+</div>
+<hr class="mb-4">
+
+<div class="row">
+    <div class="col-lg-12">
+        <div class="exercise-card">
+            <div class="row">
+                <!-- Panel de Control (Izquierda) -->
+                <div class="col-lg-4 control-panel">
+                    <h4 class="text-white-50 mb-3">Registrar Estudiante</h4>
+                    <form id="addStudentForm" class="mb-4">
+                        <div class="mb-3">
+                            <label for="studentName" class="form-label">Nombre del Estudiante:</label>
+                            <input type="text" id="studentName" class="form-control form-control-lg" placeholder="Ej: Flor Ku" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="studentGrade" class="form-label">Calificación (0-100):</label>
+                            <input type="number" id="studentGrade" class="form-control form-control-lg" min="0" max="100" placeholder="Ej: 85" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 btn-lg"><i class="bi bi-person-plus-fill me-2"></i>Registrar y Clasificar</button>
+                    </form>
+                </div>
+
+                <!-- Panel de Visualización (Derecha) -->
+                <div class="col-lg-8 visualization-panel">
+                    <div class="row">
+                        <!-- Lista de Aprobados -->
+                        <div class="col-md-6">
+                            <h4 class="text-white-50 mb-3 text-center">
+                                <i class="bi bi-emoji-sunglasses-fill text-success me-2"></i>
+                                Aprobados (<span id="aprobadosCount">0</span>)
+                            </h4>
+                            <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                                <table class="table table-dark table-striped table-hover">
+                                    <thead><tr><th>Nombre</th><th>Calificación</th></tr></thead>
+                                    <tbody id="aprobadosBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <!-- Lista de Reprobados -->
+                        <div class="col-md-6">
+                            <h4 class="text-white-50 mb-3 text-center">
+                                <i class="bi bi-emoji-frown-fill text-danger me-2"></i>
+                                Reprobados (<span id="reprobadosCount">0</span>)
+                            </h4>
+                            <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                                <table class="table table-dark table-striped table-hover">
+                                    <thead><tr><th>Nombre</th><th>Calificación</th></tr></thead>
+                                    <tbody id="reprobadosBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        /*
+            DOCUMENTACIÓN DEL EJERCICIO 3: APROBADOS Y REPROBADOS
+            -----------------------------------------------------
+            Este ejercicio es una evolución del de Pares/Impares. En lugar de números, trabajamos con objetos, lo que es más realista.
+
+            ENTRADA:
+            - El nombre de un estudiante (string).
+            - La calificación del estudiante (número).
+
+            PROCESO:
+            - Se crea un objeto 'estudiante' con el nombre y la calificación.
+            - Se define una calificación mínima para aprobar (en este caso, 70).
+            - Se compara la calificación del estudiante con la mínima.
+            - Si es mayor o igual, se añade a la lista 'aprobados'. Si no, a la lista 'reprobados'.
+            - Me gustó la idea de ordenar las listas, así que ordené a los aprobados de mayor a menor calificación y a los reprobados igual.
+
+            SALIDA:
+            - Dos tablas que se actualizan en tiempo real, una para los aprobados y otra para los reprobados.
+            - Contadores para cada lista.
+
+            TIPO DE LISTAS USADAS:
+            - Dos Arrays de JavaScript: 'aprobados' y 'reprobados', que almacenan objetos.
+
+            MÉTODOS DE LAS LISTAS UTILIZADOS:
+            - .push(): Para agregar el objeto 'estudiante' a la lista correcta.
+            - .sort(): Para ordenar las listas por calificación. La función `(a, b) => b.calificacion - a.calificacion` ordena de mayor a menor.
+        */
+
+        const addForm = document.getElementById('addStudentForm');
+        const studentNameInput = document.getElementById('studentName');
+        const studentGradeInput = document.getElementById('studentGrade');
+        const aprobadosBody = document.getElementById('aprobadosBody');
+        const reprobadosBody = document.getElementById('reprobadosBody');
+        const aprobadosCount = document.getElementById('aprobadosCount');
+        const reprobadosCount = document.getElementById('reprobadosCount');
+
+        const CALIFICACION_MINIMA = 70;
+        let aprobados = [];
+        let reprobados = [];
+
+        addForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const estudiante = {
+                nombre: studentNameInput.value,
+                calificacion: parseInt(studentGradeInput.value, 10)
+            };
+
+            if (!estudiante.nombre || isNaN(estudiante.calificacion)) return;
+
+            if (estudiante.calificacion >= CALIFICACION_MINIMA) {
+                aprobados.push(estudiante);
+            } else {
+                reprobados.push(estudiante);
+            }
+
+            updateView();
+            addForm.reset();
+            studentNameInput.focus();
+        });
+
+        function updateView() {
+            // Ordenar por calificación (descendente)
+            aprobados.sort((a, b) => b.calificacion - a.calificacion);
+            reprobados.sort((a, b) => b.calificacion - a.calificacion);
+
+            renderTable(aprobadosBody, aprobados, 'No hay estudiantes aprobados.');
+            renderTable(reprobadosBody, reprobados, 'No hay estudiantes reprobados.');
+
+            aprobadosCount.textContent = aprobados.length;
+            reprobadosCount.textContent = reprobados.length;
+        }
+
+        function renderTable(tbody, list, emptyMessage) {
+            tbody.innerHTML = '';
+            if (list.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="2" class="text-center text-muted">${emptyMessage}</td></tr>`;
+            } else {
+                list.forEach(item => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td>${item.nombre}</td><td>${item.calificacion}</td>`;
+                    tbody.appendChild(tr);
+                });
+            }
+        }
+    });
+</script>
+}

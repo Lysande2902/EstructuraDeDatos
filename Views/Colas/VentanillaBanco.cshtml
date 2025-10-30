@@ -1,2 +1,245 @@
-<h2>Ejercicio de Colas</h2>
-<p>Esta sección será implementada próximamente.</p>
+@{
+    ViewData["Title"] = "Ventanilla de Banco";
+}
+<div class="text-center">
+    <h1 class="display-6 fw-bold">Colas: Ventanilla de un Banco</h1>
+    <p class="lead text-muted">Simula la gestión de clientes en la cola de una ventanilla de banco (FIFO).</p>
+</div>
+<hr class="mb-4">
+<div class="row">
+    <div class="col-lg-12">
+        <div class="exercise-card">
+            <div class="row">
+                <!-- Panel de Control (Izquierda) -->
+                <div class="col-lg-4 control-panel">
+                    <h4 class="text-white-50 mb-3">Panel de Control</h4>
+                    <form id="llegadaForm" class="mb-4">
+                        <div class="mb-3">
+                            <label for="nombreCliente" class="form-label">Nombre del Cliente:</label>
+                            <input type="text" id="nombreCliente" class="form-control form-control-lg" placeholder="Ej: Maria Lopez" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="tipoMovimiento" class="form-label">Tipo de Movimiento:</label>
+                            <select id="tipoMovimiento" class="form-select form-select-lg" required>
+                                <option value="" disabled selected>Seleccione un movimiento...</option>
+                                <option value="Depósito">Depósito</option>
+                                <option value="Retiro">Retiro</option>
+                                <option value="Consulta de saldo">Consulta de saldo</option>
+                                <option value="Pago de servicios">Pago de servicios</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 btn-lg"><i class="bi bi-person-plus-fill me-2"></i>Registrar Llegada</button>
+                    </form>
+
+                    <hr>
+
+                    <button id="atenderBtn" class="btn btn-success w-100 btn-lg"><i class="bi bi-person-check-fill me-2"></i>Atender Cliente</button>
+
+                    <div id="comprobanteContainer" class="mt-4">
+                        <!-- El comprobante del cliente atendido se mostrará aquí -->
+                    </div>
+                </div>
+
+                <!-- Panel de Visualización (Derecha) -->
+                <div class="col-lg-8 visualization-panel">
+                    <h4 class="text-white-50 mb-3 text-center">Fila de Clientes</h4>
+                    <div class="queue-visualization">
+                        <div class="d-flex justify-content-between align-items-center text-muted mb-2">
+                            <span><i class="bi bi-arrow-right"></i> VENTANILLA</span>
+                            <span><i class="bi bi-door-open"></i> ENTRADA</span>
+                        </div>
+                        <div class="queue-container" id="queueContainer">
+                            <!-- Los clientes se mostrarán aquí -->
+                        </div>
+                        <div id="statusPanel" class="alert alert-info mt-3 text-center">
+                            La fila está vacía.
+                        </div>
+                    </div>
+
+                    <!-- Tabla de Clientes (DataGridView) -->
+                    <div class="mt-4">
+                        <h5 class="text-white-50">Clientes en Espera</h5>
+                        <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                            <table class="table table-dark table-striped table-hover">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Turno</th>
+                                        <th scope="col">Nombre</th>
+                                        <th scope="col">Movimiento</th>
+                                        <th scope="col">Hora de Llegada</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="clientesTableBody">
+                                    <!-- Las filas de clientes se agregarán aquí -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const llegadaForm = document.getElementById('llegadaForm');
+        const nombreClienteInput = document.getElementById('nombreCliente');
+        const tipoMovimientoSelect = document.getElementById('tipoMovimiento');
+        const atenderBtn = document.getElementById('atenderBtn');
+        const queueContainer = document.getElementById('queueContainer');
+        const statusPanel = document.getElementById('statusPanel');
+        const comprobanteContainer = document.getElementById('comprobanteContainer');
+        const clientesTableBody = document.getElementById('clientesTableBody');
+
+        let bankQueue = [];
+        let turnoCounter = 0;
+        const MAX_CAPACITY = 10; // Capacidad máxima de la cola
+
+        // --- Lógica de Llegada de Cliente (InsertaCola) ---
+        llegadaForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            // Validar sobreflujo (ColaLlena)
+            if (bankQueue.length >= MAX_CAPACITY) {
+                mostrarComprobante(null, `¡Cola llena! No se pueden formar más de ${MAX_CAPACITY} clientes.`);
+                return;
+            }
+
+            turnoCounter++;
+            const cliente = {
+                turno: turnoCounter,
+                nombre: nombreClienteInput.value,
+                movimiento: tipoMovimientoSelect.value,
+                horaLlegada: new Date()
+            };
+
+            bankQueue.push(cliente);
+            addClientToView(cliente);
+            updateTableView();
+            updateStatusPanel();
+
+            // Limpiar formulario
+            nombreClienteInput.value = '';
+            tipoMovimientoSelect.value = '';
+            nombreClienteInput.focus();
+        });
+
+        // --- Lógica de Atender Cliente (EliminaCola) ---
+        atenderBtn.addEventListener('click', function() {
+            // Validar que la cola no esté vacía (ColaVacia)
+            if (bankQueue.length === 0) {
+                mostrarComprobante(null, "No hay clientes en la fila para atender.");
+                return;
+            }
+
+            const clienteAtendido = bankQueue.shift(); // FIFO - El primero en entrar es el primero en salir
+            const horaAtencion = new Date();
+            const tiempoEsperaSeg = (horaAtencion - clienteAtendido.horaLlegada) / 1000;
+            
+            removeClientFromView();
+            updateTableView();
+            updateStatusPanel();
+            mostrarComprobante(clienteAtendido, null, horaAtencion, tiempoEsperaSeg);
+        });
+
+        // --- Funciones de la Vista ---
+        function addClientToView(cliente) {
+            const clienteDiv = document.createElement('div');
+            clienteDiv.className = 'car-item bg-primary border-info'; // Reutilizando estilo de auto
+            clienteDiv.innerHTML = `
+                <div class="plate">Turno ${cliente.turno}</div>
+                <div class="owner">${cliente.nombre}</div>
+            `;
+            queueContainer.appendChild(clienteDiv);
+
+            // Animación de entrada
+            setTimeout(() => {
+                clienteDiv.style.opacity = 1;
+                clienteDiv.style.animation = 'push-animation 0.5s forwards';
+            }, 10);
+        }
+
+        function removeClientFromView() {
+            const clienteDiv = queueContainer.firstChild;
+            if (clienteDiv) {
+                clienteDiv.style.animation = 'pop-animation-left 0.5s forwards';
+                setTimeout(() => {
+                    clienteDiv.remove();
+                }, 500); // Esperar a que la animación termine
+            }
+        }
+
+        function updateTableView() {
+            // Actualizar tabla (DataGridView)
+            clientesTableBody.innerHTML = '';
+            bankQueue.forEach(cliente => {
+                const clienteDiv = document.createElement('div');
+                clienteDiv.className = 'car-item bg-primary border-info'; // Reutilizando estilo de auto
+                clienteDiv.innerHTML = `
+                    <div class="plate">Turno ${cliente.turno}</div>
+                    <div class="owner">${cliente.nombre}</div>
+                `;
+                queueContainer.appendChild(clienteDiv);
+            });
+        }
+
+        function updateStatusPanel() {
+            if (bankQueue.length === 0) {
+                statusPanel.textContent = 'La fila está vacía.';
+                statusPanel.classList.replace('alert-success', 'alert-info');
+            } else {
+                const frente = bankQueue[0].turno;
+                const final = bankQueue[bankQueue.length - 1].turno;
+                statusPanel.textContent = `Hay ${bankQueue.length} cliente(s). Frente: ${frente}, Final: ${final}.`;
+                statusPanel.classList.replace('alert-info', 'alert-success');
+            }
+        }
+
+        function mostrarComprobante(cliente, error, horaAtencion, tiempoEspera) {
+            comprobanteContainer.innerHTML = ''; // Limpiar anterior
+
+            const comprobanteDiv = document.createElement('div'); 
+            
+            if (error) {
+                comprobanteDiv.className = 'exit-ticket alert-warning';
+                comprobanteDiv.innerHTML = `<h5 class="text-warning"><i class="bi bi-exclamation-triangle-fill me-2"></i>Aviso</h5><p>${error}</p>`;
+            } else if (cliente) {
+                comprobanteDiv.className = 'exit-ticket';
+                const formatTime = (date) => date.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+                comprobanteDiv.innerHTML = `
+                    <h5 class="text-center"><i class="bi bi-receipt"></i> Cliente Atendido</h5>
+                    <hr>
+                    <p><strong>Turno:</strong> ${cliente.turno}</p>
+                    <p><strong>Nombre:</strong> ${cliente.nombre}</p>
+                    <p><strong>Movimiento:</strong> ${cliente.movimiento}</p>
+                    <p><strong>Hora Llegada:</strong> ${formatTime(cliente.horaLlegada)}</p>
+                    <p><strong>Hora Atención:</strong> ${formatTime(horaAtencion)}</p>
+                    <hr>
+                    <div class="text-center">
+                        <p class="mb-1">TIEMPO DE ESPERA:</p>
+                        <p class="cost">${tiempoEspera.toFixed(2)} segundos</p>
+                    </div>
+                `;
+            }
+
+            comprobanteContainer.appendChild(comprobanteDiv);
+        }
+
+        function updateView() {
+            // Limpia y reconstruye la vista gráfica sin animación (para estado inicial)
+            queueContainer.innerHTML = '';
+            bankQueue.forEach(cliente => addClientToView(cliente));
+            
+            updateTableView();
+            updateStatusPanel();
+        }
+
+        // Llamada inicial para establecer el estado
+        updateStatusPanel();
+        updateTableView();
+    });
+</script>
+}

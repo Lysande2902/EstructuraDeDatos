@@ -1,2 +1,231 @@
-<h2>Ejercicio de Listas</h2>
-<p>Esta sección será implementada por otro miembro del equipo.</p>
+@{
+    ViewData["Title"] = "Ordenar Productos";
+}
+<div class="text-center">
+    <h1 class="display-6 fw-bold">Listas: Ejercicio 4 - Ordenar Productos</h1>
+    <p class="lead text-muted">Administra una lista de productos, eliminando por clave y mostrando la lista ordenada por nombre.</p>
+</div>
+<hr class="mb-4">
+
+<div class="row">
+    <div class="col-lg-12">
+        <div class="exercise-card">
+            <div class="row">
+                <!-- Panel de Control (Izquierda) -->
+                <div class="col-lg-4 control-panel">
+                    <h4 class="text-white-50 mb-3">Agregar Producto</h4>
+                    <form id="addProductForm" class="mb-4">
+                        <div class="mb-3">
+                            <label for="productKey" class="form-label">Clave del Producto:</label>
+                            <input type="number" id="productKey" class="form-control form-control-lg" placeholder="Ej: 101" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="productName" class="form-label">Nombre del Producto:</label>
+                            <input type="text" id="productName" class="form-control form-control-lg" placeholder="Ej: Laptop" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="productPrice" class="form-label">Precio:</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" id="productPrice" class="form-control form-control-lg" placeholder="Ej: 15000.50" step="0.01" required>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 btn-lg"><i class="bi bi-plus-circle-fill me-2"></i>Agregar Producto</button>
+                    </form>
+
+                    <hr>
+
+                    <h4 class="text-white-50 mb-3">Eliminar Producto</h4>
+                    <form id="deleteProductForm" class="mb-4">
+                        <div class="mb-3">
+                            <label for="deleteProductKey" class="form-label">Clave a Eliminar:</label>
+                            <input type="number" id="deleteProductKey" class="form-control form-control-lg" placeholder="Clave del producto" required>
+                        </div>
+                        <button type="submit" class="btn btn-danger w-100 btn-lg"><i class="bi bi-trash-fill me-2"></i>Eliminar por Clave</button>
+                    </form>
+
+                    <div id="alertContainer" class="mt-4">
+                        <!-- Las alertas se mostrarán aquí -->
+                    </div>
+                </div>
+
+                <!-- Panel de Visualización (Derecha) -->
+                <div class="col-lg-8 visualization-panel">
+                    <h4 class="text-white-50 mb-3 text-center">Lista de Productos (Ordenada por Nombre)</h4>
+                    <div class="table-responsive" style="max-height: 450px; overflow-y: auto;">
+                        <table class="table table-dark table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Clave</th>
+                                    <th scope="col">Nombre</th>
+                                    <th scope="col">Precio</th>
+                                </tr>
+                            </thead>
+                            <tbody id="productsTableBody">
+                                <!-- Las filas de productos se agregarán aquí -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="summaryPanel" class="alert alert-info mt-3 text-center">
+                        La lista de productos está vacía.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        /*
+            DOCUMENTACIÓN DEL EJERCICIO 4: ORDENAR PRODUCTOS
+            -------------------------------------------------
+            Este ejercicio me gustó porque combinaba varias operaciones: agregar, eliminar y ordenar.
+
+            ENTRADA:
+            - Para agregar: Clave (número), Nombre (texto) y Precio (número) de un producto.
+            - Para eliminar: La clave del producto a eliminar.
+
+            PROCESO:
+            - Se usa una sola lista (array 'productList') para guardar todos los productos.
+            - Al agregar, se valida que la clave no esté repetida usando el método .some().
+            - Al eliminar, se busca el producto por su clave con .findIndex() y se quita con .splice().
+            - La parte más importante es que, después de cualquier cambio, la lista completa se reordena por nombre.
+              Esto se hace con `productList.sort((a, b) => a.nombre.localeCompare(b.nombre))`. `localeCompare` es genial para ordenar texto.
+            - También se calcula el costo total de todos los productos usando .reduce().
+
+            SALIDA:
+            - Una tabla que siempre muestra los productos ordenados alfabéticamente.
+            - Un panel de resumen con el número de productos y el costo total.
+
+            MÉTODOS DE LAS LISTAS UTILIZADOS:
+            - .push(), .some(), .findIndex(), .splice(), .sort(), .reduce(), .forEach()
+        */
+
+        // --- Elementos del DOM ---
+        const addForm = document.getElementById('addProductForm');
+        const productKeyInput = document.getElementById('productKey');
+        const productNameInput = document.getElementById('productName');
+        const productPriceInput = document.getElementById('productPrice');
+
+        const deleteForm = document.getElementById('deleteProductForm');
+        const deleteKeyInput = document.getElementById('deleteProductKey');
+
+        const productsTableBody = document.getElementById('productsTableBody');
+        const summaryPanel = document.getElementById('summaryPanel');
+        const alertContainer = document.getElementById('alertContainer');
+
+        let productList = [];
+
+        // --- Lógica para Agregar Producto ---
+        addForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const clave = parseInt(productKeyInput.value);
+            const nombre = productNameInput.value.trim();
+            const precio = parseFloat(productPriceInput.value);
+
+            // Validar que la clave no exista
+            if (productList.some(p => p.clave === clave)) {
+                showAlert(`La clave de producto '${clave}' ya existe.`, 'warning');
+                return;
+            }
+
+            const newProduct = { clave, nombre, precio };
+            productList.push(newProduct);
+
+            updateView();
+            showAlert(`Producto '${nombre}' agregado correctamente.`, 'success');
+
+            // Limpiar formulario
+            addForm.reset();
+            productKeyInput.focus();
+        });
+
+        // --- Lógica para Eliminar Producto ---
+        deleteForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const claveToDelete = parseInt(deleteKeyInput.value);
+            const productIndex = productList.findIndex(p => p.clave === claveToDelete);
+
+            if (productIndex === -1) {
+                showAlert(`No se encontró ningún producto con la clave '${claveToDelete}'.`, 'danger');
+                return;
+            }
+
+            const deletedProductName = productList[productIndex].nombre;
+            productList.splice(productIndex, 1);
+
+            updateView();
+            showAlert(`Producto '${deletedProductName}' eliminado correctamente.`, 'success');
+            deleteForm.reset();
+        });
+
+        // --- Funciones de la Vista ---
+        function updateView() {
+            // 1. Ordenar la lista por nombre
+            productList.sort((a, b) => a.nombre.localeCompare(b.nombre));
+
+            // 2. Actualizar la tabla
+            productsTableBody.innerHTML = '';
+            if (productList.length === 0) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td colspan="3" class="text-center text-muted">No hay productos en la lista.</td>`;
+                productsTableBody.appendChild(tr);
+            } else {
+                productList.forEach(product => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${product.clave}</td>
+                        <td>${product.nombre}</td>
+                        <td>${formatCurrency(product.precio)}</td>
+                    `;
+                    productsTableBody.appendChild(tr);
+                });
+            }
+
+            // 3. Actualizar el panel de resumen (costo total)
+            updateSummary();
+        }
+
+        function updateSummary() {
+            if (productList.length === 0) {
+                summaryPanel.textContent = 'La lista de productos está vacía.';
+                summaryPanel.className = 'alert alert-info mt-3 text-center';
+            } else {
+                const totalCost = productList.reduce((total, product) => total + product.precio, 0);
+                summaryPanel.innerHTML = `
+                    <strong>Total de Productos:</strong> ${productList.length} | 
+                    <strong>Costo Total de Compra:</strong> ${formatCurrency(totalCost)}
+                `;
+                summaryPanel.className = 'alert alert-success mt-3 text-center';
+            }
+        }
+
+        function showAlert(message, type) {
+            alertContainer.innerHTML = `
+                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            `;
+            // La alerta se cierra sola o con el botón de bootstrap
+        }
+
+        function formatCurrency(amount) {
+            return amount.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' });
+        }
+
+        // --- Carga Inicial ---
+        // Datos de ejemplo para iniciar
+        productList = [
+            { clave: 102, nombre: 'Mouse Gamer', precio: 850.00 },
+            { clave: 101, nombre: 'Teclado Mecánico', precio: 2100.50 },
+            { clave: 103, nombre: 'Monitor 24"', precio: 4500.00 }
+        ];
+        updateView();
+    });
+</script>
+}
